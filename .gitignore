@@ -1,0 +1,41 @@
+#
+# ビルド成果物
+#
+/HardwareDebug
+/Release
+/Debug
+
+#
+# Smart Configuratorでファイルを更新したときに生成されるバックアップ
+#
+/trash
+
+#
+# デバイス変更したときのログ
+#
+/output
+
+#
+# ドキュメント類でオープンしているやつ。
+#
+/doc/\~$*
+
+#
+# ダンプした結果
+#
+*.dump
+
+#
+# viエディタとかで操作中のやつ
+#
+~*
+
+#
+# e2studio のプロジェクト用ローカル設定
+#
+/.settings
+
+#
+# cppcheckの実行結果
+# 
+/cppcheck*.txt
