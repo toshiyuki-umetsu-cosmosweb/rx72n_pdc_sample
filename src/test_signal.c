@@ -328,6 +328,10 @@ void test_signal_init(void)
         R_GLCDC_PinSet();
     }
 
+    PORT1.PDR.BIT.B4 = 1;
+    PORT1.PODR.BIT.B4 = 0;
+    PORT1.PMR.BIT.B4 = 0;
+
     R_GLCDC_Control(GLCDC_CMD_STOP_DISPLAY, NULL);
 
     return ;
@@ -340,14 +344,24 @@ void test_signal_init(void)
  */
 bool test_signal_set_output(bool is_output)
 {
+    bool is_succeed;
     if (is_output)
     {
-        return (R_GLCDC_Control(GLCDC_CMD_START_DISPLAY, NULL) == GLCDC_SUCCESS);
+        is_succeed = (R_GLCDC_Control(GLCDC_CMD_START_DISPLAY, NULL) == GLCDC_SUCCESS);
+        if (is_succeed)
+        {
+            PORT1.PMR.BIT.B4 = 1; // P14 for Peripheral
+        }
     }
     else
     {
-        return (R_GLCDC_Control(GLCDC_CMD_STOP_DISPLAY, NULL) == GLCDC_SUCCESS);
+        is_succeed = (R_GLCDC_Control(GLCDC_CMD_STOP_DISPLAY, NULL) == GLCDC_SUCCESS);
+        if (is_succeed)
+        {
+            PORT1.PMR.BIT.B4 = 0;
+        }
     }
+    return is_succeed;
 }
 
 /**
