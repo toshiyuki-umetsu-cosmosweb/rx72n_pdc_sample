@@ -122,7 +122,7 @@ static void on_pceri_detected(void* pparam);
 static void process_errors(void);
 static void request_reset(void (*pcallback)(bool is_succeed));
 static bool wait_reset_done(void);
-static bool is_valid_capture_range(uint16_t hst, uint16_t vst, uint16_t hsz, uint16_t vsz);
+static bool is_valid_capture_range(const pdc_capture_range_t* prange);
 static void on_reset_done_before_capture(bool is_reset_done);
 static void set_module_stop(bool is_stop);
 
@@ -318,11 +318,7 @@ static int setup_pdc(pdc_config_t* pcfg)
         return EINVAL;
     }
 
-    uint16_t hst = pcfg->capture_pos.hst_position;
-    uint16_t vst = pcfg->capture_pos.vst_position;
-    uint16_t hsz = pcfg->capture_size.hsz_size;
-    uint16_t vsz = pcfg->capture_size.vsz_size;
-    if (!is_valid_capture_range(hst, vst, hsz, vsz))
+    if (!is_valid_capture_range(&(pcfg->capture_size)))
     {
         return EINVAL;
     }
@@ -338,11 +334,11 @@ static int setup_pdc(pdc_config_t* pcfg)
     request_reset(NULL); // PDCリセット。 PIXCLKが入力されていないと、ここは失敗する。
     wait_reset_done();
 
-    PDC.VCR.BIT.VST = pcfg->capture_pos.vst_position;
-    PDC.HCR.BIT.HST = pcfg->capture_pos.hst_position;
+    PDC.VCR.BIT.VST = pcfg->capture_size.vstart;
+    PDC.VCR.BIT.VSZ = pcfg->capture_size.vsize;
 
-    PDC.VCR.BIT.VSZ = pcfg->capture_size.vsz_size;
-    PDC.HCR.BIT.HSZ = pcfg->capture_size.hsz_size;
+    PDC.HCR.BIT.HST = pcfg->capture_size.hstart;
+    PDC.HCR.BIT.HSZ = pcfg->capture_size.hsize;
 
     PDC.PCCR0.BIT.VPS = pcfg->is_vsync_hactive ? PDC_SYNC_SIGNAL_POLARITY_HIGH : PDC_SYNC_SIGNAL_POLARITY_LOW;
     PDC.PCCR0.BIT.HPS = pcfg->is_hsync_hactive ? PDC_SYNC_SIGNAL_POLARITY_HIGH : PDC_SYNC_SIGNAL_POLARITY_LOW;
@@ -357,11 +353,8 @@ static int setup_pdc(pdc_config_t* pcfg)
 }
 
 /**
- * @brief Ends operation by the PDC and puts it into the module stop state.
- * @retval    PDC_SUCCESS      Processing finished successfully.
- * @retval    PDC_ERR_NOT_OPEN R_PDC_Open has not been run.
- * @details   This function is performed to shut down the PDC. See section 3.2 in application note for details.
- * @note      Use this API function after running R_PDC_Open and confirming that the return value is PDC_SUCCESS.
+ * @brief PDCをクローズする
+ * @return 成功した場合には0, 失敗した場合にはエラー番号。
  */
 int rx_driver_pdc_close(void)
 {
@@ -766,23 +759,21 @@ int rx_driver_pdc_get_signal_polarity(bool* is_hsync_hactive, bool* is_vsync_hac
 /**
  * @brief キャプチャ位置設定を設定する。
  *        受信中に実行するとエラーになるため、受信停止してから呼び出すこと。
- * @param ppos 位置設定
- * @param psize サイズ設定
+ * @param prange 範囲設定
  * @return 成功した場合には0, 失敗した場合にはエラー番号を返す。
  */
-int rx_driver_pdc_set_position_size(const pdc_position_t* ppos, const pdc_capture_size_t* psize)
+int rx_driver_pdc_set_range(const pdc_capture_range_t* prange)
 {
     if (!s_is_opened)
     {
         return ENOTSUP;
     }
+    if (prange == NULL)
+    {
+        return EINVAL;
+    }
 
-    uint16_t hst = (ppos != NULL) ? ppos->hst_position : PDC.HCR.BIT.HST;
-    uint16_t vst = (ppos != NULL) ? ppos->vst_position : PDC.VCR.BIT.VST;
-    uint16_t hsz = (psize != NULL) ? psize->hsz_size : PDC.HCR.BIT.HSZ;
-    uint16_t vsz = (psize != NULL) ? psize->vsz_size : PDC.VCR.BIT.VSZ;
-
-    if (!is_valid_capture_range(hst, vst, hsz, vsz))
+    if (!is_valid_capture_range(prange))
     {
         return EINVAL;
     }
@@ -792,10 +783,10 @@ int rx_driver_pdc_set_position_size(const pdc_position_t* ppos, const pdc_captur
         return EBUSY;
     }
 
-    PDC.VCR.BIT.VST = vst;
-    PDC.HCR.BIT.HST = hst;
-    PDC.VCR.BIT.VSZ = vsz;
-    PDC.HCR.BIT.HSZ = hsz;
+    PDC.VCR.BIT.VST = prange->vstart;
+    PDC.VCR.BIT.VSZ = prange->vsize;
+    PDC.HCR.BIT.HST = prange->hstart;
+    PDC.HCR.BIT.HSZ = prange->hsize;
 
     return 0;
 }
@@ -808,43 +799,39 @@ int rx_driver_pdc_set_position_size(const pdc_position_t* ppos, const pdc_captur
  * @param vsz 垂直方向キャプチャライン数
  * @return 対応可能な場合にはtrue, それ以外はfalse.
  */
-static bool is_valid_capture_range(uint16_t hst, uint16_t vst, uint16_t hsz, uint16_t vsz)
+static bool is_valid_capture_range(const pdc_capture_range_t* prange)
 {
-    return ((hst <= PDC_HST_UPPER_LIMIT)                   // 水平位置が設定可能値範囲内？
-            && (vst <= PDC_VST_UPPER_LIMIT)                // 垂直位置が設定可能値範囲内？
-            && (hsz >= PDC_HSZ_LOWER_LIMIT)                // 水平サイズが設定可能最小値以上？
-            && (hsz <= PDC_HSZ_UPPER_LIMIT)                // 水平サイズが設定可能最大値以下？
-            && (vsz >= PDC_VSZ_LOWER_LIMIT)                // 垂直幅が設定可能最小値以上？
-            && (vsz <= PDC_VSZ_UPPER_LIMIT)                // 垂直幅が設定可能最大値以下？
-            && ((hst + hsz) <= PDC_HSTHSZ_MIX_UPPER_LIMIT) // 水平方向処理に必要なカウンタ幅が、カウンタ上限以下
-            && ((vst + vsz) <= PDC_VSTVSZ_MIX_UPPER_LIMIT) // 垂直方向処理に必要なカウンタ幅が、カウンタ上限以下
+    return ((prange->hstart <= PDC_HST_UPPER_LIMIT)                             // 水平位置が設定可能値範囲内？
+            && (prange->vstart <= PDC_VST_UPPER_LIMIT)                          // 垂直位置が設定可能値範囲内？
+            && (prange->hsize >= PDC_HSZ_LOWER_LIMIT)                           // 水平サイズが設定可能最小値以上？
+            && (prange->hsize <= PDC_HSZ_UPPER_LIMIT)                           // 水平サイズが設定可能最大値以下？
+            && (prange->vsize >= PDC_VSZ_LOWER_LIMIT)                           // 垂直幅が設定可能最小値以上？
+            && (prange->vsize <= PDC_VSZ_UPPER_LIMIT)                           // 垂直幅が設定可能最大値以下？
+            && ((prange->hstart + prange->hsize) <= PDC_HSTHSZ_MIX_UPPER_LIMIT) // 水平方向処理に必要なカウンタ幅が、カウンタ上限以下
+            && ((prange->hstart + prange->vsize) <= PDC_VSTVSZ_MIX_UPPER_LIMIT) // 垂直方向処理に必要なカウンタ幅が、カウンタ上限以下
     );
 }
 
 /**
  * @brief キャプチャ範囲を得る。
- * @param ppos キャプチャ開始位置を取得するオブジェクトのアドレス
- * @param psize キャプチャサイズを取得するオブジェクトのアドレス
+ * @param prange キャプチャ範囲を取得するオブジェクトのアドレス
  * @return 成功した場合には0, 失敗した場合にはエラー番号
  */
-int rx_driver_pdc_get_position_size(pdc_position_t* ppos, pdc_capture_size_t* psize)
+int rx_driver_pdc_get_range(pdc_capture_range_t* psize)
 {
     if (!s_is_opened)
     {
         return ENOTSUP;
     }
-
-    if (ppos != NULL)
+    if (psize == NULL)
     {
-        ppos->hst_position = PDC.HCR.BIT.HST;
-        ppos->vst_position = PDC.VCR.BIT.VST;
+        return EINVAL;
     }
 
-    if (psize != NULL)
-    {
-        psize->hsz_size = PDC.HCR.BIT.HSZ;
-        psize->vsz_size = PDC.VCR.BIT.VSZ;
-    }
+    psize->hstart = PDC.HCR.BIT.HST;
+    psize->hsize = PDC.HCR.BIT.HSZ;
+    psize->vstart = PDC.VCR.BIT.VST;
+    psize->vsize = PDC.VCR.BIT.VSZ;
 
     return 0;
 }

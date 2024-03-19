@@ -126,13 +126,13 @@ void pdc_init(void)
     s_pdc_config.interrupt_setting.verie_ien = false; // 垂直方向ライン数設定エラー割り込みしない（キャプチャ中だけONにする）
     s_pdc_config.interrupt_setting.herie_ien = false; // 水平方向バイト数設定エラー割り込みしない（キャプチャ中だけONにする）
 
-    s_pdc_config.is_vsync_hactive = false;        // Vsync Low Active
-    s_pdc_config.is_hsync_hactive = true;         // Hsync High Active
-    s_pdc_config.capture_pos.vst_position = 10;   // 垂直方向ライン開始 = 垂直方向バックポーチ。
-                                                  // VSync検出後、バックポーチ分のライン数後にアクティブデータが入る。
-    s_pdc_config.capture_size.vsz_size = 480;     // 480ライン
-    s_pdc_config.capture_pos.hst_position = 612;  // 水平方向開始位置 = 水平方向のバックポーチ
-    s_pdc_config.capture_size.hsz_size = 640 * 2; // 640 * 2 = 1280バイト (YUVUなので2倍)
+    s_pdc_config.is_vsync_hactive = false;     // Vsync Low Active
+    s_pdc_config.is_hsync_hactive = true;      // Hsync High Active
+    s_pdc_config.capture_size.vstart = 10;     // 垂直方向ライン開始 = 垂直方向バックポーチ。
+                                               // VSync検出後、バックポーチ分のライン数後にアクティブデータが入る。
+    s_pdc_config.capture_size.vsize = 480;     // 480ライン
+    s_pdc_config.capture_size.hstart = 612;    // 水平方向開始位置 = 水平方向のバックポーチ
+    s_pdc_config.capture_size.hsize = 640 * 2; // 640 * 2 = 1280バイト (YUVUなので2倍)
 
     s_pdc_config.p_callback.pcb_receive_data_ready = NULL;
     s_pdc_config.p_callback.pcb_frame_end = on_frame_end;
@@ -213,18 +213,15 @@ bool pdc_get_signal_polarity(bool* is_hsync_hactive, bool* is_vsync_hactive)
 
 /**
  * @brief キャプチャ範囲を設定する
- * @param xst X開始位置(HSyncを抜ける位置を0としたオフセット)
+ * @param xstart X開始位置(HSyncを抜ける位置を0としたオフセット)
  * @param xsize Xキャプチャサイズ
- * @param yst Y開始位置(VSyncを抜ける位置を0としたオフセット)
+ * @param ystart Y開始位置(VSyncを抜ける位置を0としたオフセット)
  * @param ysize Yキャプチャサイズ
  * @param bpp 1ピクセルあたりのバイト数
  * @return 成功した場合には0, 失敗した場合にはエラー番号。
  */
-bool pdc_set_capture_range(uint16_t xst, uint16_t xsize, uint16_t yst, uint16_t ysize, uint8_t bpp)
+bool pdc_set_capture_range(uint16_t xstart, uint16_t xsize, uint16_t ystart, uint16_t ysize, uint8_t bpp)
 {
-    pdc_position_t pos;
-    pdc_capture_size_t size;
-
     if ((bpp != 1) && (bpp != 2) && (bpp != 3))
     {
         return false;
@@ -236,12 +233,14 @@ bool pdc_set_capture_range(uint16_t xst, uint16_t xsize, uint16_t yst, uint16_t 
     {
         return false;
     }
-    pos.hst_position = xst * bpp;
-    pos.vst_position = yst;
-    size.hsz_size = xsize * bpp;
-    size.vsz_size = ysize;
+    pdc_capture_range_t range;
 
-    int retval = rx_driver_pdc_set_position_size(&pos, &size);
+    range.hstart = xstart * bpp;
+    range.vstart = ystart;
+    range.hsize = xsize * bpp;
+    range.vsize = ysize;
+
+    int retval = rx_driver_pdc_set_range(&range);
     if (retval != 0)
     {
         return false;
@@ -255,37 +254,36 @@ bool pdc_set_capture_range(uint16_t xst, uint16_t xsize, uint16_t yst, uint16_t 
 
 /**
  * @brief キャプチャ範囲を取得する
- * @param xst X開始位置
- * @param xsize Xキャプチャサイズ
- * @param yst Y開始位置
- * @param ysize Yキャプチャサイズ
- * @param bpp 1ピクセルあたりのバイト数
+ * @param xstart X開始位置を取得する変数のアドレス。（取得しない場合にはNULL）
+ * @param xsize Xキャプチャサイズを取得する変数のアドレス。（取得しない場合にはNULL）
+ * @param ystart Y開始位置を取得する変数のアドレス。（取得しない場合にはNULL）
+ * @param ysize Yキャプチャサイズを取得する変数のアドレス。（取得しない場合にはNULL）
+ * @param bpp 1ピクセルあたりのバイト数を取得する変数のアドレス。（取得しない場合にはNULL）
  * @return 成功した場合には0, 失敗した場合にはエラー番号。
  */
-bool pdc_get_capture_range(uint16_t* xst, uint16_t* xsize, uint16_t* yst, uint16_t* ysize, uint8_t* bpp)
+bool pdc_get_capture_range(uint16_t* xstart, uint16_t* xsize, uint16_t* ystart, uint16_t* ysize, uint8_t* bpp)
 {
-    pdc_position_t pos;
-    pdc_capture_size_t size;
-    if (rx_driver_pdc_get_position_size(&pos, &size) != 0)
+    pdc_capture_range_t range;
+    if (rx_driver_pdc_get_range(&range) != 0)
     {
         return false;
     }
 
-    if (xst != NULL)
+    if (xstart != NULL)
     {
-        (*xst) = pos.hst_position / s_bpp;
+        (*xstart) = range.hstart / s_bpp;
     }
-    if (yst != NULL)
+    if (ystart != NULL)
     {
-        (*yst) = pos.vst_position;
+        (*ystart) = range.vstart;
     }
     if (xsize != NULL)
     {
-        (*xsize) = size.hsz_size / s_bpp;
+        (*xsize) = range.hsize / s_bpp;
     }
     if (ysize != NULL)
     {
-        (*ysize) = size.vsz_size;
+        (*ysize) = range.vsize;
     }
     if (bpp != NULL)
     {
