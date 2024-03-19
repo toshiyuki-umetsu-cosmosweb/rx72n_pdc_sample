@@ -13,67 +13,66 @@
 #include "command_table.h"
 #include "command_pdc.h"
 
-static void cmd_pdc_capture(int ac, char **av);
-static void on_capture_done(const struct pdc_status *pstat);
-static void cmd_pdc_stop(int ac, char **av);
-static void cmd_pdc_state(int ac, char **av);
-static void print_pdc_status(const struct pdc_status *pstat);
-static void cmd_pdc_capture_range(int ac, char **av);
-static void cmd_pdc_signal_polarity(int ac, char **av);
-static bool parse_polarity(const char *str, bool *polarity);
-static void cmd_pdc_reset(int ac, char **av);
+static void cmd_pdc_capture(int ac, char** av);
+static void on_capture_done(const struct pdc_status* pstat);
+static void cmd_pdc_stop(int ac, char** av);
+static void cmd_pdc_state(int ac, char** av);
+static void print_pdc_status(const struct pdc_status* pstat);
+static void cmd_pdc_capture_range(int ac, char** av);
+static void cmd_pdc_signal_polarity(int ac, char** av);
+static bool parse_polarity(const char* str, bool* polarity);
+static void cmd_pdc_reset(int ac, char** av);
 
 /**
  * コマンドエントリテーブル
  */
 //@formatter:off
 static const struct cmd_entry CommandEntries[] = {
-    { "capture", "Capture frame.", cmd_pdc_capture },
-    { "stop", "Stop capture.", cmd_pdc_stop },
-    { "state", "Get status.", cmd_pdc_state },
-    { "capture-range", "Set/Get capture range.", cmd_pdc_capture_range },
-    { "signal-polarity", "Set/Get signal polarity setting.", cmd_pdc_signal_polarity },
-    { "reset", "Reset status.", cmd_pdc_reset },
+    {"capture", "Capture frame.", cmd_pdc_capture},
+    {"stop", "Stop capture.", cmd_pdc_stop},
+    {"state", "Get status.", cmd_pdc_state},
+    {"capture-range", "Set/Get capture range.", cmd_pdc_capture_range},
+    {"signal-polarity", "Set/Get signal polarity setting.", cmd_pdc_signal_polarity},
+    {"reset", "Reset status.", cmd_pdc_reset},
 };
 //@formatter:on
 /**
  * コマンドエントリ数
  */
-static const int CommandEntryCount = (int) (sizeof(CommandEntries) / sizeof(struct cmd_entry));
-
+static const int CommandEntryCount = (int)(sizeof(CommandEntries) / sizeof(struct cmd_entry));
 
 /**
  * @brief pdcコマンドを処理する。
  * @param ac 引数の数
  * @param av 引数配列
  */
-void cmd_pdc(int ac, char **av)
+void cmd_pdc(int ac, char** av)
 {
     if (ac >= 2)
     {
-        const struct cmd_entry *pentry = command_table_find_cmd(CommandEntries, CommandEntryCount, av[1]);
+        const struct cmd_entry* pentry = command_table_find_cmd(CommandEntries, CommandEntryCount, av[1]);
         if (pentry != NULL)
         {
-            pentry->cmd_proc (ac, av);
+            pentry->cmd_proc(ac, av);
         }
         else
         {
-            printf ("Unknown subcommand: %s\n", av[1]);
+            printf("Unknown subcommand: %s\n", av[1]);
         }
     }
     else
     {
         for (uint32_t i = 0u; i < CommandEntryCount; i++)
         {
-            const struct cmd_entry *pentry = &(CommandEntries[i]);
+            const struct cmd_entry* pentry = &(CommandEntries[i]);
             if ((pentry->cmd != NULL) && (pentry->desc != NULL))
             {
-                printf ("pdc %s - %s\n", pentry->cmd, pentry->desc);
+                printf("pdc %s - %s\n", pentry->cmd, pentry->desc);
             }
         }
     }
 
-    return ;
+    return;
 }
 
 /**
@@ -81,27 +80,27 @@ void cmd_pdc(int ac, char **av)
  * @param ac 引数の数
  * @param av 引数配列
  */
-static void cmd_pdc_capture(int ac, char **av)
+static void cmd_pdc_capture(int ac, char** av)
 {
     if (!pdc_start_capture(on_capture_done))
     {
         printf("Could not start capture.\n");
-        return ;
+        return;
     }
 
     printf("Capture started.\n");
-    return ;
+    return;
 }
 
 /**
  * @brief キャプチャが完了したときの処理を行う
  * @param pstat PDCステータス
  */
-static void on_capture_done(const struct pdc_status *pstat)
+static void on_capture_done(const struct pdc_status* pstat)
 {
     printf("Capture done.\n");
     print_pdc_status(pstat);
-    return ;
+    return;
 }
 
 /**
@@ -109,11 +108,11 @@ static void on_capture_done(const struct pdc_status *pstat)
  * @param ac 引数の数
  * @param av 引数配列
  */
-static void cmd_pdc_stop(int ac, char **av)
+static void cmd_pdc_stop(int ac, char** av)
 {
     pdc_stop_capture();
 
-    return ;
+    return;
 }
 
 /**
@@ -121,25 +120,25 @@ static void cmd_pdc_stop(int ac, char **av)
  * @param ac 引数の数
  * @param av 引数配列
  */
-static void cmd_pdc_state(int ac, char **av)
+static void cmd_pdc_state(int ac, char** av)
 {
     struct pdc_status status;
 
     if (!pdc_get_status(&status))
     {
         printf("Could not get state.\n");
-        return ;
+        return;
     }
 
     print_pdc_status(&status);
-    return ;
+    return;
 }
 
 /**
  * @brief PDCのステータスを表示する
  * @param pstat 表示するステータス
  */
-static void print_pdc_status(const struct pdc_status *pstat)
+static void print_pdc_status(const struct pdc_status* pstat)
 {
     printf("%s\n", (pstat->is_receiving ? "Running" : "Idle"));
     printf("FIFO = %s\n", pstat->is_fifo_empty ? "Empty" : "DataExists");
@@ -151,7 +150,7 @@ static void print_pdc_status(const struct pdc_status *pstat)
     printf("HSizeError = %d\n", pstat->has_hsize_err ? 1 : 0);
     printf("Captured = %u / %u\n", pstat->received_len, pstat->total_len);
 
-    return ;
+    return;
 }
 
 /**
@@ -159,21 +158,17 @@ static void print_pdc_status(const struct pdc_status *pstat)
  * @param ac 引数の数
  * @param av 引数配列
  */
-static void cmd_pdc_capture_range(int ac, char **av)
+static void cmd_pdc_capture_range(int ac, char** av)
 {
     if (ac >= 7)
     {
         uint16_t xst, xsize, yst, ysize;
         uint8_t bpp;
 
-        if (!parse_u16(av[2], &xst)
-                || !parse_u16(av[3], &xsize)
-                || !parse_u16(av[4], &yst)
-                || !parse_u16(av[5], &ysize)
-                || !parse_u8(av[6], &bpp))
+        if (!parse_u16(av[2], &xst) || !parse_u16(av[3], &xsize) || !parse_u16(av[4], &yst) || !parse_u16(av[5], &ysize) || !parse_u8(av[6], &bpp))
         {
             printf("Invalid arguments.\n");
-            return ;
+            return;
         }
 
         if (!pdc_set_capture_range(xst, xsize, yst, ysize, bpp))
@@ -198,7 +193,7 @@ static void cmd_pdc_capture_range(int ac, char **av)
         printf("  pdc capture-size [ xst# xsize# yst# ysize# bpp# ]\n");
     }
 
-    return ;
+    return;
 }
 
 /**
@@ -206,7 +201,7 @@ static void cmd_pdc_capture_range(int ac, char **av)
  * @param ac 引数の数
  * @param av 引数配列
  */
-static void cmd_pdc_signal_polarity(int ac, char **av)
+static void cmd_pdc_signal_polarity(int ac, char** av)
 {
     if (ac == 4)
     {
@@ -215,7 +210,7 @@ static void cmd_pdc_signal_polarity(int ac, char **av)
         if (!parse_polarity(av[2], &h_pol) || !parse_polarity(av[3], &v_pol))
         {
             printf("Invalid polarity.\n");
-            return ;
+            return;
         }
 
         if (!pdc_set_signal_polarity(h_pol, v_pol))
@@ -230,12 +225,10 @@ static void cmd_pdc_signal_polarity(int ac, char **av)
         if (!pdc_get_signal_polarity(&h_pol, &v_pol))
         {
             printf("Could not get signal polarity.\n");
-            return ;
+            return;
         }
 
-        printf("HSync=%s VSync=%s\n",
-                (h_pol ? "H-Active" : "L-Active"),
-                (v_pol ? "H-Active" : "L-Active"));
+        printf("HSync=%s VSync=%s\n", (h_pol ? "H-Active" : "L-Active"), (v_pol ? "H-Active" : "L-Active"));
     }
     else
     {
@@ -243,7 +236,7 @@ static void cmd_pdc_signal_polarity(int ac, char **av)
         printf("  pdc signal-polarity [ h-pol$ v-pol$ ]\n");
     }
 
-    return ;
+    return;
 }
 
 /**
@@ -255,7 +248,7 @@ static void cmd_pdc_signal_polarity(int ac, char **av)
  * @param polarity 極性を取得する変数。(true:H-Active, false:L-Active)
  * @return 成功した場合にはtrue, 失敗した場合にはfalse.
  */
-static bool parse_polarity(const char *str, bool *polarity)
+static bool parse_polarity(const char* str, bool* polarity)
 {
     bool is_succeed = false;
     if ((strcasecmp(str, "h") == 0) || (strcasecmp(str, "h-active") == 0))
@@ -270,7 +263,7 @@ static bool parse_polarity(const char *str, bool *polarity)
     }
     else
     {
-        char *p;
+        char* p;
         int value = strtol(str, &p, 0);
         if ((p != NULL) && (*p == '\0'))
         {
@@ -278,8 +271,6 @@ static bool parse_polarity(const char *str, bool *polarity)
             is_succeed = true;
         }
     }
-
-
 
     return is_succeed;
 }
@@ -289,7 +280,7 @@ static bool parse_polarity(const char *str, bool *polarity)
  * @param ac 引数の数
  * @param av 引数配列
  */
-static void cmd_pdc_reset(int ac, char **av)
+static void cmd_pdc_reset(int ac, char** av)
 {
     if (!pdc_reset(500))
     {
@@ -300,5 +291,5 @@ static void cmd_pdc_reset(int ac, char **av)
         printf("Reset done.\n");
     }
 
-    return ;
+    return;
 }

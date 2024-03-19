@@ -18,7 +18,7 @@
  */
 static bool s_is_lcd_event_processing;
 
-static void glcdc_callback(void *arg);
+static void glcdc_callback(void* arg);
 
 /**
  * @brief GLCDC Gamma R設定
@@ -309,12 +309,10 @@ static glcdc_cfg_t s_lcd_config = {
 };
 //@formatter:on
 
-
 /**
  * @brief バックグラウンドカラー
  */
 static glcdc_color_t s_bg_color;
-
 
 /**
  * @brief テスト信号を初期化する
@@ -324,7 +322,8 @@ void test_signal_init(void)
     s_is_lcd_event_processing = false;
     s_bg_color = s_lcd_config.output.bg_color; // memcpy()に相当。
 
-    if (R_GLCDC_Open(&s_lcd_config) == GLCDC_SUCCESS) {
+    if (R_GLCDC_Open(&s_lcd_config) == GLCDC_SUCCESS)
+    {
         R_GLCDC_PinSet();
     }
 
@@ -334,7 +333,7 @@ void test_signal_init(void)
 
     R_GLCDC_Control(GLCDC_CMD_STOP_DISPLAY, NULL);
 
-    return ;
+    return;
 }
 
 /**
@@ -396,32 +395,30 @@ uint8_t test_signal_get_data(void)
     return s_bg_color.byte.b;
 }
 
-
 /**
  * @brief GLCDC のイベントコールバック
  * @param arg パラメータ
  */
-static void glcdc_callback(void *arg)
+static void glcdc_callback(void* arg)
 {
     if (!s_is_lcd_event_processing) // 初回のイベント？
     {
         // 2回目以降のイベントのみ処理対象。
         s_is_lcd_event_processing = true;
-        return ;
+        return;
     }
 
-    glcdc_callback_args_t *p = (glcdc_callback_args_t*)(arg);
-    switch (p->event) {
-        case GLCDC_EVENT_LINE_DETECTION:
-        {
-            // TODO : VPOS Event
-            break;
-        }
-        default:
-        {
-            break;
-        }
+    glcdc_callback_args_t* p = (glcdc_callback_args_t*)(arg);
+    switch (p->event)
+    {
+    case GLCDC_EVENT_LINE_DETECTION: {
+        // TODO : VPOS Event
+        break;
+    }
+    default: {
+        break;
+    }
     }
 
-    return ;
+    return;
 }

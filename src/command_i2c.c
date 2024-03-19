@@ -23,15 +23,15 @@ static uint8_t s_i2c_tx_buf[I2C_MAX_IOLEN];
  */
 static uint8_t s_i2c_rx_buf[I2C_MAX_IOLEN];
 
-static void cmd_i2c_bit_rate(int ac, char **av);
-static void cmd_i2c_process(int ac, char **av);
+static void cmd_i2c_bit_rate(int ac, char** av);
+static void cmd_i2c_process(int ac, char** av);
 
 /**
  * @brief i2cコマンドを処理する
  * @param ac 引数の数
  * @param av 引数配列
  */
-void cmd_i2c(int ac, char **av)
+void cmd_i2c(int ac, char** av)
 {
     if ((ac >= 2) && (strcmp(av[1], "bit-rate") == 0))
     {
@@ -46,9 +46,7 @@ void cmd_i2c(int ac, char **av)
         printf("i2c bit-rate [rate#] - Set/get bit-rate.\n");
         printf("i2c slave_addr# [ send tx0# [ tx1# [ ... ] ] ] [ recv rx_len# ] - Do transaction.\n");
     }
-    return ;
-
-
+    return;
 }
 
 /**
@@ -57,12 +55,12 @@ void cmd_i2c(int ac, char **av)
  * @param ac 引数の数
  * @param av 引数配列
  */
-static void cmd_i2c_bit_rate(int ac, char **av)
+static void cmd_i2c_bit_rate(int ac, char** av)
 {
     if (ac >= 3)
     {
         int32_t bit_rate;
-        char *p;
+        char* p;
 
         bit_rate = strtol(av[2], &p, 0);
         if ((p != NULL) && (*p != '\0'))
@@ -78,20 +76,20 @@ static void cmd_i2c_bit_rate(int ac, char **av)
             else
             {
                 printf("Invalid bit rate. %s\n", av[2]);
-                return ;
+                return;
             }
         }
         if (bit_rate < 0)
         {
             printf("Invalid bit rate. %s\n", av[2]);
-            return ;
+            return;
         }
 
         int s = i2c_set_bitrate((uint32_t)(bit_rate));
         if (s != 0)
         {
             printf("Could not set bit-rate. (%d)\n", s);
-            return ;
+            return;
         }
 
         printf("%u\n", i2c_get_bitrate());
@@ -101,7 +99,7 @@ static void cmd_i2c_bit_rate(int ac, char **av)
         printf("%u\n", i2c_get_bitrate());
     }
 
-    return ;
+    return;
 }
 
 /**
@@ -109,7 +107,7 @@ static void cmd_i2c_bit_rate(int ac, char **av)
  * @param ac 引数の数
  * @param av 引数配列
  */
-static void cmd_i2c_process(int ac, char **av)
+static void cmd_i2c_process(int ac, char** av)
 {
     uint8_t slave_addr = 0;
     uint8_t tx_len = 0;
@@ -118,7 +116,7 @@ static void cmd_i2c_process(int ac, char **av)
     if (!parse_u8(av[1], &slave_addr) || (slave_addr >= 0x80))
     {
         printf("Invalid slave address. : %s\n", av[1]);
-        return ;
+        return;
     }
 
     int i = 2;
@@ -151,13 +149,13 @@ static void cmd_i2c_process(int ac, char **av)
         if (i >= ac)
         {
             printf("Receive count not specified.\n");
-            return ;
+            return;
         }
 
         if (!parse_u8(av[i], &rx_len) || (rx_len > I2C_MAX_IOLEN))
         {
             printf("Invalid rx count. : %s\n", av[i]);
-            return ;
+            return;
         }
         i++;
     }
@@ -165,7 +163,7 @@ static void cmd_i2c_process(int ac, char **av)
     {
         printf("usage:\n");
         printf("  i2c slave_addr# [ send tx0# [ tx1# [ ... ] ] ] [ recv rx_len# ]\n");
-        return ;
+        return;
     }
 
     if (tx_len > 0)
@@ -176,7 +174,7 @@ static void cmd_i2c_process(int ac, char **av)
             if (s != 0)
             {
                 printf("transaction failure. (%d)\n", s);
-                return ;
+                return;
             }
             for (uint8_t i = 0; i < rx_len; i++)
             {
@@ -190,7 +188,7 @@ static void cmd_i2c_process(int ac, char **av)
             if (s != 0)
             {
                 printf("transaction failure. (%d)\n", s);
-                return ;
+                return;
             }
             printf("transmit succeed.\n");
         }
@@ -203,7 +201,7 @@ static void cmd_i2c_process(int ac, char **av)
             if (s != 0)
             {
                 printf("transaction failure. (%d)\n", s);
-                return ;
+                return;
             }
 
             for (uint8_t i = 0; i < rx_len; i++)
@@ -217,5 +215,5 @@ static void cmd_i2c_process(int ac, char **av)
             printf("no transaction.\n");
         }
     }
-    return ;
+    return;
 }

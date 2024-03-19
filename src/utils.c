@@ -16,11 +16,11 @@
  * @param pbool ON/OFFを取得する変数のアドレス
  * @return 解析成功した場合にはtrue, 失敗した場合にはfalse.
  */
-bool parse_boolean(const char *s, bool *pbool)
+bool parse_boolean(const char* s, bool* pbool)
 {
     bool is_parse_succeed = false;
 
-    char *p;
+    char* p;
     int d = strtol(s, &p, 0);
     if ((p != NULL) && (*p == '\0'))
     {
@@ -54,10 +54,10 @@ bool parse_boolean(const char *s, bool *pbool)
  * @param pval 値を取得する変数のアドレス
  * @return 解析成功した場合にはtrue, 失敗した場合にはfalse.
  */
-bool parse_u8(const char *s, uint8_t *pval)
+bool parse_u8(const char* s, uint8_t* pval)
 {
     bool is_parse_succeed = false;
-    char *p;
+    char* p;
     uint32_t d = strtoul(s, &p, 0);
     if ((p != NULL) && (*p == '\0'))
     {
@@ -76,10 +76,10 @@ bool parse_u8(const char *s, uint8_t *pval)
  * @param pval 値を取得する変数のアドレス
  * @return 解析成功した場合にはtrue, 失敗した場合にはfalse.
  */
-bool parse_u16(const char *s, uint16_t *pval)
+bool parse_u16(const char* s, uint16_t* pval)
 {
     bool is_parse_succeed = false;
-    char *p;
+    char* p;
     uint32_t d = strtoul(s, &p, 0);
     if ((p != NULL) && (*p == '\0'))
     {
@@ -98,10 +98,10 @@ bool parse_u16(const char *s, uint16_t *pval)
  * @param pval 値を取得する変数のアドレス
  * @return 解析成功した場合にはtrue, 失敗した場合にはfalse.
  */
-bool parse_u32(const char *s, uint32_t *pval)
+bool parse_u32(const char* s, uint32_t* pval)
 {
     bool is_parse_succeed = false;
-    char *p;
+    char* p;
     uint32_t d = strtoul(s, &p, 0);
     if ((p != NULL) && (*p == '\0'))
     {
@@ -111,4 +111,3 @@ bool parse_u32(const char *s, uint32_t *pval)
 
     return is_parse_succeed;
 }
-

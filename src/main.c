@@ -1,12 +1,12 @@
 /***********************************************************************
-*
-*  FILE        : main.c
-*  DATE        : 2024-03-04
-*  DESCRIPTION : Main Program
-*
-*  NOTE:THIS IS A TYPICAL EXAMPLE.
-*
-***********************************************************************/
+ *
+ *  FILE        : main.c
+ *  DATE        : 2024-03-04
+ *  DESCRIPTION : Main Program
+ *
+ *  NOTE:THIS IS A TYPICAL EXAMPLE.
+ *
+ ***********************************************************************/
 #include "r_smc_entry.h"
 
 #include "hwtick.h"
@@ -31,7 +31,8 @@ void main(void)
     pdc_init();
 
     volatile int counter = 0;
-    while (1) {
+    while (1)
+    {
         usb_cdc_update();
         command_io_update();
         pdc_update();
@@ -40,5 +41,4 @@ void main(void)
 
         counter++;
     }
-
 }

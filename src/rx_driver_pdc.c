@@ -15,25 +15,24 @@
  *         クロックソースで指定したソースに対して、この分周で設定した出力が行われる。
  *         例えばクロックソースがPLLなら、PLLの周波数を、この分周されたものが出力される。
  */
-#define PDC_CFG_PCKO_DIV  (8)
+#define PDC_CFG_PCKO_DIV (8)
 
 /**
  * PDC タイムアウト時間[ミリ秒]
  */
 #define PDC_WAIT_TIMEOUT_MILLIS (50u)
 
-#define PDC_DISABLE_OPERATION       (0)
-#define PDC_ENABLE_OPERATION        (1)
+#define PDC_DISABLE_OPERATION (0)
+#define PDC_ENABLE_OPERATION (1)
 
+#define PDC_DISABLE_PIXCLK_INPUT (0)
+#define PDC_ENABLE_PIXCLK_INPUT (1)
 
-#define PDC_DISABLE_PIXCLK_INPUT    (0)
-#define PDC_ENABLE_PIXCLK_INPUT     (1)
+#define PDC_RESET_RELEASE (0)
+#define PDC_RESET (1)
 
-#define PDC_RESET_RELEASE           (0)
-#define PDC_RESET                   (1)
-
-#define PDC_DISABLE_PCKO_OUTPUT     (0)
-#define PDC_ENABLE_PCKO_OUTPUT      (1)
+#define PDC_DISABLE_PCKO_OUTPUT (0)
+#define PDC_ENABLE_PCKO_OUTPUT (1)
 
 /**
  * @brief Sync信号極性 = L
@@ -41,57 +40,57 @@
  *       これはキャプチャ対象のHSYNCレベルがHighの部分、という意味合いで、
  *       ビデオの同期信号とは意味合いが異なる。
  */
-#define PDC_SYNC_SIGNAL_POLARITY_LOW    (0)
+#define PDC_SYNC_SIGNAL_POLARITY_LOW (0)
 /**
  * @brief Sync信号極性 = H
  * @note PDC_HSYNC_POLARITY_LOW_ACTIVEの説明を参照。
  */
-#define PDC_SYNC_SIGNAL_POLARITY_HIGH     (1)
+#define PDC_SYNC_SIGNAL_POLARITY_HIGH (1)
 
 /**
  * @brief VST上限
  */
-#define PDC_VST_UPPER_LIMIT         (0x0FFE)
+#define PDC_VST_UPPER_LIMIT (0x0FFE)
 
 /**
  * @brief HST上限
  */
-#define PDC_HST_UPPER_LIMIT         (0x0FFB)
+#define PDC_HST_UPPER_LIMIT (0x0FFB)
 
 /**
  * @brief VSZ下限
  */
-#define PDC_VSZ_LOWER_LIMIT         (0x0001)
+#define PDC_VSZ_LOWER_LIMIT (0x0001)
 /**
  * @brief VSZ上限
  */
-#define PDC_VSZ_UPPER_LIMIT         (0x0FFF)
+#define PDC_VSZ_UPPER_LIMIT (0x0FFF)
 /**
  * @brief HSZ下限
  */
-#define PDC_HSZ_LOWER_LIMIT         (0x0004)
+#define PDC_HSZ_LOWER_LIMIT (0x0004)
 /**
  * @brief HSZ上限
  */
-#define PDC_HSZ_UPPER_LIMIT         (0x0FFF)
+#define PDC_HSZ_UPPER_LIMIT (0x0FFF)
 
 /**
  * @brief 垂直方向カウンタ上限
  */
-#define PDC_VSTVSZ_MIX_UPPER_LIMIT  (0x0FFF)
+#define PDC_VSTVSZ_MIX_UPPER_LIMIT (0x0FFF)
 /**
  * @brief 水平方向カウンタ上限
  */
-#define PDC_HSTHSZ_MIX_UPPER_LIMIT  (0x0FFF)
+#define PDC_HSTHSZ_MIX_UPPER_LIMIT (0x0FFF)
 
 /**
  * キャプチャしたデータのエンディアンはリトルエンディアン
  */
-#define PDC_EDS_LITTLE_ENDIAN       (0)
+#define PDC_EDS_LITTLE_ENDIAN (0)
 /**
  * キャプチャしたデータのエンディアンはビッグエンディアン
  */
-#define PDC_EDS_BIG_ENDIAN          (1)
+#define PDC_EDS_BIG_ENDIAN (1)
 
 /**
  * @brief PDCドライバがオープンされているかどうかのフラグ
@@ -102,13 +101,8 @@ static bool s_is_opened = false;
  * @brief コールバック関数
  */
 //@formatter:off
-static pdc_callback_functions_t s_callback_functions = {
-    .pcb_receive_data_ready = NULL,
-    .pcb_frame_end = NULL,
-    .pcb_error = NULL
-};
+static pdc_callback_functions_t s_callback_functions = {.pcb_receive_data_ready = NULL, .pcb_frame_end = NULL, .pcb_error = NULL};
 //@formatter:on
-
 
 /**
  * @brief リセット開始時Tick
@@ -121,24 +115,23 @@ static uint32_t s_reset_start_tick;
 static void (*s_reset_done_callback)(bool is_reset_done);
 
 static void setup_io_pins(void);
-static int setup_interrupts(const pdc_config_t *pcfg);
-static int setup_pdc (pdc_config_t *pcfg);
-static void on_pcfei_detected (void * pparam);
-static void on_pceri_detected (void * pparam);
-static void process_errors (void);
+static int setup_interrupts(const pdc_config_t* pcfg);
+static int setup_pdc(pdc_config_t* pcfg);
+static void on_pcfei_detected(void* pparam);
+static void on_pceri_detected(void* pparam);
+static void process_errors(void);
 static void request_reset(void (*pcallback)(bool is_succeed));
 static bool wait_reset_done(void);
 static bool is_valid_capture_range(uint16_t hst, uint16_t vst, uint16_t hsz, uint16_t vsz);
 static void on_reset_done_before_capture(bool is_reset_done);
-static void set_module_stop (bool is_stop);
-
+static void set_module_stop(bool is_stop);
 
 /**
  * @brief PDCペリフェラルをオープンする。
  * @param p_data_cfg 設定
  * @return 成功した場合には0, 失敗した場合にはエラー番号。
  */
-int rx_driver_pdc_open (pdc_config_t *p_data_cfg)
+int rx_driver_pdc_open(pdc_config_t* p_data_cfg)
 {
     if (s_is_opened)
     {
@@ -190,7 +183,6 @@ int rx_driver_pdc_open (pdc_config_t *p_data_cfg)
 
     return retval;
 }
-
 
 /**
  * @brief I/Oピン設定を行う。
@@ -251,7 +243,7 @@ static void setup_io_pins(void)
 
     R_BSP_RegisterProtectEnable(BSP_REG_PROTECT_MPC);
 
-    return ;
+    return;
 }
 
 /**
@@ -259,33 +251,30 @@ static void setup_io_pins(void)
  * @param pcfg 設定
  * @return 成功した場合には0, 失敗した場合にはエラー番号
  */
-static int setup_interrupts(const pdc_config_t *pcfg)
+static int setup_interrupts(const pdc_config_t* pcfg)
 {
-    if ((pcfg->int_priority_pcdfi > BSP_MCU_IPL_MAX) // PCDFIのプライオリティが設定範囲外？
-            || (pcfg->int_priority_pcefi > BSP_MCU_IPL_MAX) // PCEFI割り込みのプライオリティが設定範囲外？
-            || (pcfg->int_priority_pceri > BSP_MCU_IPL_MAX) // PCERI割り込みのプライオリティが設定範囲外？
+    if ((pcfg->int_priority_pcdfi > BSP_MCU_IPL_MAX)    // PCDFIのプライオリティが設定範囲外？
+        || (pcfg->int_priority_pcefi > BSP_MCU_IPL_MAX) // PCEFI割り込みのプライオリティが設定範囲外？
+        || (pcfg->int_priority_pceri > BSP_MCU_IPL_MAX) // PCERI割り込みのプライオリティが設定範囲外？
     )
     {
         return EINVAL;
     }
-
 
     IPR(PDC, PCDFI) = pcfg->int_priority_pcdfi;
     IEN(PDC, PCDFI) = 1;
 
     {
         bsp_int_ctrl_t int_ctrl = {
-            .ipl = (pcfg->int_priority_pcefi > pcfg->int_priority_pceri)
-                    ? pcfg->int_priority_pcefi : pcfg->int_priority_pceri,
+            .ipl = (pcfg->int_priority_pcefi > pcfg->int_priority_pceri) ? pcfg->int_priority_pcefi : pcfg->int_priority_pceri,
         };
         // Note: GROUPBL0割り込みのプライオリティを設定するので、
         //       FIT BSP のAPIを使用して設定する。
         //       こうすると、他でもGROUPBL0を使っていた場合に、上手いこと競合を解決してくれる。
-        R_BSP_InterruptControl(BSP_INT_SRC_BL0_PDC_PCFEI, BSP_INT_CMD_GROUP_INTERRUPT_ENABLE,
-                (void *) &int_ctrl);
+        R_BSP_InterruptControl(BSP_INT_SRC_BL0_PDC_PCFEI, BSP_INT_CMD_GROUP_INTERRUPT_ENABLE, (void*)&int_ctrl);
         // Note: PCFEIはPCFEIと同じグループBL0にマップされているので、
         //       R_BSP_InterruptControlを呼び出す必要はない。
-        //R_BSP_InterruptControl(BSP_INT_SRC_BL0_PDC_PCFEI,
+        // R_BSP_InterruptControl(BSP_INT_SRC_BL0_PDC_PCFEI,
         //      BSP_INT_CMD_GROUP_INTERRUPT_ENABLE, (void*)(&int_ctrl));
     }
 
@@ -300,7 +289,7 @@ static int setup_interrupts(const pdc_config_t *pcfg)
         R_BSP_InterruptControl(BSP_INT_SRC_EMPTY, BSP_INT_CMD_FIT_INTERRUPT_ENABLE, &int_ctrl);
     }
 
-    IR(PDC, PCDFI)= 0; /* Interrupt request is cleared. */
+    IR(PDC, PCDFI) = 0; /* Interrupt request is cleared. */
 
     R_BSP_InterruptRequestEnable(VECT(PDC, PCDFI));
 
@@ -322,7 +311,7 @@ static int setup_interrupts(const pdc_config_t *pcfg)
  * @param pcfg 設定
  * @return 成功した場合には0, 失敗した場合にはエラー番号
  */
-static int setup_pdc (pdc_config_t *pcfg)
+static int setup_pdc(pdc_config_t* pcfg)
 {
     if (pcfg == NULL)
     {
@@ -341,7 +330,7 @@ static int setup_pdc (pdc_config_t *pcfg)
     PDC.PCCR1.BIT.PCE = PDC_DISABLE_OPERATION; // 受信動作禁止
 
     uint16_t pckdiv_value = ((PDC_CFG_PCKO_DIV / 2) - 1);
-    PDC.PCCR0.BIT.PCKDIV = pckdiv_value; // PCKO分周設定
+    PDC.PCCR0.BIT.PCKDIV = pckdiv_value;          // PCKO分周設定
     PDC.PCCR0.BIT.PCKOE = PDC_ENABLE_PCKO_OUTPUT; // PCKO出力を許可
 
     PDC.PCCR0.BIT.PCKE = PDC_ENABLE_PIXCLK_INPUT; // PCLKE入力許可
@@ -367,7 +356,6 @@ static int setup_pdc (pdc_config_t *pcfg)
     return 0;
 }
 
-
 /**
  * @brief Ends operation by the PDC and puts it into the module stop state.
  * @retval    PDC_SUCCESS      Processing finished successfully.
@@ -375,7 +363,7 @@ static int setup_pdc (pdc_config_t *pcfg)
  * @details   This function is performed to shut down the PDC. See section 3.2 in application note for details.
  * @note      Use this API function after running R_PDC_Open and confirming that the return value is PDC_SUCCESS.
  */
-int rx_driver_pdc_close (void)
+int rx_driver_pdc_close(void)
 {
     if (!s_is_opened)
     {
@@ -406,13 +394,12 @@ int rx_driver_pdc_close (void)
 
     set_module_stop(true);
 
-    R_BSP_HardwareUnlock((mcu_lock_t) (BSP_LOCK_PDC));
+    R_BSP_HardwareUnlock((mcu_lock_t)(BSP_LOCK_PDC));
 
     s_is_opened = false;
 
     return 0;
 }
-
 
 /**
  * @brief ドライバの更新処理を行う。
@@ -422,15 +409,15 @@ void rx_driver_pdc_update(void)
     if (s_reset_done_callback != NULL) // リセット完了待ち処理がある？
     {
         bool is_reset_done = (PDC.PCCR0.BIT.PRST == PDC_RESET_RELEASE);
-        if (is_reset_done // リセット完了した？
-                || ((hwtick_get() - s_reset_start_tick) >= 500)) // リセット開始してから500ミリ秒経過した？
+        if (is_reset_done                                    // リセット完了した？
+            || ((hwtick_get() - s_reset_start_tick) >= 500)) // リセット開始してから500ミリ秒経過した？
         {
             s_reset_done_callback(is_reset_done);
             s_reset_done_callback = NULL;
         }
     }
 
-    return ;
+    return;
 }
 /**
  * @brief PDCの割り込みプライオリティを設定する
@@ -448,31 +435,25 @@ int rx_driver_pdc_set_irq_priority(int type, uint8_t priority)
     int retval;
     switch (type)
     {
-        case PDC_INTERRUPT_PCDFI:
-        {
-            IPR(PDC, PCDFI) = priority;
-            retval = 0;
-            break;
-        }
-        case PDC_INTERRUPT_PCFEI:
-        case PDC_INTERRUPT_PCERI:
-        {
-            bsp_int_ctrl_t int_ctrl = {
-                .ipl = priority
-            };
+    case PDC_INTERRUPT_PCDFI: {
+        IPR(PDC, PCDFI) = priority;
+        retval = 0;
+        break;
+    }
+    case PDC_INTERRUPT_PCFEI:
+    case PDC_INTERRUPT_PCERI: {
+        bsp_int_ctrl_t int_ctrl = {.ipl = priority};
 
-            // Note: GROUPBL0割り込みのプライオリティを設定するので、
-            //       FIT BSP のAPIを使用して設定する。
-            //       こうすると、他でもGROUPBL0を使っていた場合に、上手いこと競合を解決してくれる。
-            R_BSP_InterruptControl(BSP_INT_SRC_BL0_PDC_PCFEI, BSP_INT_CMD_GROUP_INTERRUPT_ENABLE,
-                    (void *) &int_ctrl);
-            retval = 0;
-            break;
-        }
-        default:
-        {
-            retval = EINVAL;
-        }
+        // Note: GROUPBL0割り込みのプライオリティを設定するので、
+        //       FIT BSP のAPIを使用して設定する。
+        //       こうすると、他でもGROUPBL0を使っていた場合に、上手いこと競合を解決してくれる。
+        R_BSP_InterruptControl(BSP_INT_SRC_BL0_PDC_PCFEI, BSP_INT_CMD_GROUP_INTERRUPT_ENABLE, (void*)&int_ctrl);
+        retval = 0;
+        break;
+    }
+    default: {
+        retval = EINVAL;
+    }
     }
 
     return retval;
@@ -488,22 +469,19 @@ uint8_t rx_driver_pdc_get_irq_priority(int type)
     uint8_t retval;
     switch (type)
     {
-        case PDC_INTERRUPT_PCDFI:
-        {
-            retval = IPR(PDC, PCDFI);
-            break;
-        }
-        case PDC_INTERRUPT_PCFEI:
-        case PDC_INTERRUPT_PCERI:
-        {
-            retval = IPR(ICU, GROUPBL0); // PCFEI, PCEFIはGROUPBL0割り込みになっている。
-            break;
-        }
-        default:
-        {
-            retval = 0;
-            break;
-        }
+    case PDC_INTERRUPT_PCDFI: {
+        retval = IPR(PDC, PCDFI);
+        break;
+    }
+    case PDC_INTERRUPT_PCFEI:
+    case PDC_INTERRUPT_PCERI: {
+        retval = IPR(ICU, GROUPBL0); // PCFEI, PCEFIはGROUPBL0割り込みになっている。
+        break;
+    }
+    default: {
+        retval = 0;
+        break;
+    }
     }
 
     return retval;
@@ -514,7 +492,7 @@ uint8_t rx_driver_pdc_get_irq_priority(int type)
  * @param psetting 割り込み設定データ
  * @return 成功した場合には0, 失敗した場合にはエラー番号
  */
-int rx_driver_pdc_set_interrupt_setting(const pdc_interrupt_setting_t *psetting)
+int rx_driver_pdc_set_interrupt_setting(const pdc_interrupt_setting_t* psetting)
 {
     if (psetting == NULL)
     {
@@ -540,7 +518,7 @@ int rx_driver_pdc_set_interrupt_setting(const pdc_interrupt_setting_t *psetting)
  * @param psetting 割り込み設定データを格納する変数
  * @return 成功した場合には0, 失敗した場合にはエラー番号
  */
-int rx_driver_pdc_get_interrupt_setting(pdc_interrupt_setting_t *psetting)
+int rx_driver_pdc_get_interrupt_setting(pdc_interrupt_setting_t* psetting)
 {
     if (psetting == NULL)
     {
@@ -599,7 +577,7 @@ bool rx_driver_pdc_is_resetting(void)
  * フレーム終了割り込み検知時に通知を受け取る。
  * @param pparam パラメータ
  */
-static void on_pcfei_detected (void * pparam)
+static void on_pcfei_detected(void* pparam)
 {
     R_BSP_InterruptsEnable(); // 多重割り込み許可(他の高優先度処理を許可する)
 
@@ -629,10 +607,7 @@ static void on_pcfei_detected (void * pparam)
             /* Check registration frame end callback function */
             if (s_callback_functions.pcb_frame_end != 0)
             {
-                pdc_event_arg_t cb_arg = {
-                    .event_id = PDC_EVT_ID_TRANSFER_TIMEOUT,
-                    .errors = 0
-                };
+                pdc_event_arg_t cb_arg = {.event_id = PDC_EVT_ID_TRANSFER_TIMEOUT, .errors = 0};
                 s_callback_functions.pcb_frame_end(&cb_arg);
             }
             return;
@@ -650,24 +625,21 @@ static void on_pcfei_detected (void * pparam)
 
     if (s_callback_functions.pcb_frame_end != NULL)
     {
-        pdc_event_arg_t cb_arg = {
-            .event_id = PDC_EVT_ID_FRAMEEND,
-            .errors = 0
-        };
+        pdc_event_arg_t cb_arg = {.event_id = PDC_EVT_ID_FRAMEEND, .errors = 0};
         s_callback_functions.pcb_frame_end(&cb_arg);
     }
 
-    return ;
+    return;
 }
 
 /**
  * @brief PCERI割り込み発生時に通知を受け取る。
  * @param pparam パラメータ
  */
-static void on_pceri_detected (void * pparam)
+static void on_pceri_detected(void* pparam)
 {
     process_errors();
-    return ;
+    return;
 }
 
 /**
@@ -675,10 +647,7 @@ static void on_pceri_detected (void * pparam)
  */
 static void process_errors(void)
 {
-    pdc_event_arg_t cb_arg = {
-        .event_id = PDC_EVT_ID_ERROR,
-        .errors = 0
-    };
+    pdc_event_arg_t cb_arg = {.event_id = PDC_EVT_ID_ERROR, .errors = 0};
 
     PDC.PCCR1.BIT.PCE = PDC_DISABLE_OPERATION; // 受信停止
 
@@ -708,7 +677,7 @@ static void process_errors(void)
         (*s_callback_functions.pcb_error)(&cb_arg);
     }
 
-    return ;
+    return;
 }
 
 /**
@@ -721,7 +690,7 @@ static void request_reset(void (*pcallback)(bool is_succeed))
     s_reset_done_callback = pcallback;
     PDC.PCCR0.BIT.PRST = PDC_RESET;
 
-    return ;
+    return;
 }
 
 /**
@@ -731,8 +700,7 @@ static void request_reset(void (*pcallback)(bool is_succeed))
  */
 static bool wait_reset_done(void)
 {
-    while ((PDC.PCCR0.BIT.PRST != PDC_RESET_RELEASE)
-            && ((hwtick_get() - s_reset_start_tick) <= PDC_WAIT_TIMEOUT_MILLIS))
+    while ((PDC.PCCR0.BIT.PRST != PDC_RESET_RELEASE) && ((hwtick_get() - s_reset_start_tick) <= PDC_WAIT_TIMEOUT_MILLIS))
     {
         // do nothing.
     }
@@ -776,7 +744,7 @@ int rx_driver_pdc_set_signal_polarity(bool is_hsync_hactive, bool is_vsync_hacti
  * @param is_vsync_hactive 垂直同期信号極性の設定を取得する変数
  * @return 成功した場合には0, 失敗した場合にはエラー番号
  */
-int rx_driver_pdc_get_signal_polarity(bool *is_hsync_hactive, bool *is_vsync_hactive)
+int rx_driver_pdc_get_signal_polarity(bool* is_hsync_hactive, bool* is_vsync_hactive)
 {
     if (!s_is_opened)
     {
@@ -802,7 +770,7 @@ int rx_driver_pdc_get_signal_polarity(bool *is_hsync_hactive, bool *is_vsync_hac
  * @param psize サイズ設定
  * @return 成功した場合には0, 失敗した場合にはエラー番号を返す。
  */
-int rx_driver_pdc_set_position_size (const pdc_position_t *ppos, const pdc_capture_size_t *psize)
+int rx_driver_pdc_set_position_size(const pdc_position_t* ppos, const pdc_capture_size_t* psize)
 {
     if (!s_is_opened)
     {
@@ -842,15 +810,15 @@ int rx_driver_pdc_set_position_size (const pdc_position_t *ppos, const pdc_captu
  */
 static bool is_valid_capture_range(uint16_t hst, uint16_t vst, uint16_t hsz, uint16_t vsz)
 {
-    return ((hst <= PDC_HST_UPPER_LIMIT) // 水平位置が設定可能値範囲内？
-            && (vst <= PDC_VST_UPPER_LIMIT) // 垂直位置が設定可能値範囲内？
-            && (hsz >= PDC_HSZ_LOWER_LIMIT) // 水平サイズが設定可能最小値以上？
-            && (hsz <= PDC_HSZ_UPPER_LIMIT) // 水平サイズが設定可能最大値以下？
-            && (vsz >= PDC_VSZ_LOWER_LIMIT) // 垂直幅が設定可能最小値以上？
-            && (vsz <= PDC_VSZ_UPPER_LIMIT) // 垂直幅が設定可能最大値以下？
+    return ((hst <= PDC_HST_UPPER_LIMIT)                   // 水平位置が設定可能値範囲内？
+            && (vst <= PDC_VST_UPPER_LIMIT)                // 垂直位置が設定可能値範囲内？
+            && (hsz >= PDC_HSZ_LOWER_LIMIT)                // 水平サイズが設定可能最小値以上？
+            && (hsz <= PDC_HSZ_UPPER_LIMIT)                // 水平サイズが設定可能最大値以下？
+            && (vsz >= PDC_VSZ_LOWER_LIMIT)                // 垂直幅が設定可能最小値以上？
+            && (vsz <= PDC_VSZ_UPPER_LIMIT)                // 垂直幅が設定可能最大値以下？
             && ((hst + hsz) <= PDC_HSTHSZ_MIX_UPPER_LIMIT) // 水平方向処理に必要なカウンタ幅が、カウンタ上限以下
             && ((vst + vsz) <= PDC_VSTVSZ_MIX_UPPER_LIMIT) // 垂直方向処理に必要なカウンタ幅が、カウンタ上限以下
-        );
+    );
 }
 
 /**
@@ -859,7 +827,7 @@ static bool is_valid_capture_range(uint16_t hst, uint16_t vst, uint16_t hsz, uin
  * @param psize キャプチャサイズを取得するオブジェクトのアドレス
  * @return 成功した場合には0, 失敗した場合にはエラー番号
  */
-int rx_driver_pdc_get_position_size(pdc_position_t *ppos, pdc_capture_size_t *psize)
+int rx_driver_pdc_get_position_size(pdc_position_t* ppos, pdc_capture_size_t* psize)
 {
     if (!s_is_opened)
     {
@@ -881,12 +849,11 @@ int rx_driver_pdc_get_position_size(pdc_position_t *ppos, pdc_capture_size_t *ps
     return 0;
 }
 
-
 /**
  * @brief キャプチャを開始する
  * @return 失敗した場合
  */
-int rx_driver_pdc_capture_start (void)
+int rx_driver_pdc_capture_start(void)
 {
     bsp_int_ctrl_t int_ctrl;
     PDC.PCCR1.BIT.PCE = PDC_DISABLE_OPERATION;
@@ -900,7 +867,7 @@ int rx_driver_pdc_capture_start (void)
     PDC.PCCR0.BIT.HERIE = 0;
     PDC.PCCR0.LONG |= (value & 0x000007F0); // PRST, HPS, VPS, PCKEは0を書く
 
-    IR(PDC, PCDFI)= 0;
+    IR(PDC, PCDFI) = 0;
 
     if (EN(PDC, PCFEI) != 0)
     {
@@ -936,14 +903,14 @@ static void on_reset_done_before_capture(bool is_reset_done)
         PDC.PCCR1.BIT.PCE = PDC_ENABLE_OPERATION;
     }
 
-    return ;
+    return;
 }
 /**
  * @brief pstatで指定されるステータスをクリアする。
  * @param pstat クリアするステータスを格納した pdc_stat_t オブジェクト
  * @return 成功した場合には0, 失敗した場合にはエラー番号。
  */
-int rx_driver_pdc_clear_status (pdc_stat_t *pstat)
+int rx_driver_pdc_clear_status(pdc_stat_t* pstat)
 {
     if (!s_is_opened)
     {
@@ -986,7 +953,7 @@ int rx_driver_pdc_clear_status (pdc_stat_t *pstat)
  * @param pstat ステータスを取得する構造体
  * @return 成功した場合には0, 失敗した場合にはエラー番号
  */
-int rx_driver_pdc_get_status (pdc_stat_t *pstat)
+int rx_driver_pdc_get_status(pdc_stat_t* pstat)
 {
     if (!s_is_opened)
     {
@@ -1005,7 +972,6 @@ int rx_driver_pdc_get_status (pdc_stat_t *pstat)
     pstat->verf_error = PDC.PCSR.BIT.VERF != 0;
     pstat->herf_error = PDC.PCSR.BIT.HERF != 0;
 
-
     return 0;
 }
 
@@ -1014,7 +980,7 @@ int rx_driver_pdc_get_status (pdc_stat_t *pstat)
  * @param pstat モニターステータスを格納する構造体のアドレス
  * @return 成功した場合には0失敗した場合にはエラー番号。
  */
-int rx_driver_pdc_get_monitor_stat(pdc_monitor_stat_t *pstat)
+int rx_driver_pdc_get_monitor_stat(pdc_monitor_stat_t* pstat)
 {
     if (!s_is_opened)
     {
@@ -1031,24 +997,22 @@ int rx_driver_pdc_get_monitor_stat(pdc_monitor_stat_t *pstat)
     return 0;
 }
 
-
 /**
  * @brief モジュールストップ状態を設定する。
  * @param is_stop モジュールストップさせる場合にはtrue, ストップ解除する場合にはfalse
  */
-static void set_module_stop (bool is_stop)
+static void set_module_stop(bool is_stop)
 {
     bsp_int_ctrl_t int_ctrl;
 
     R_BSP_RegisterProtectDisable(BSP_REG_PROTECT_LPC_CGC_SWR);
     R_BSP_InterruptControl(BSP_INT_SRC_EMPTY, BSP_INT_CMD_FIT_INTERRUPT_DISABLE, &int_ctrl);
-    MSTP( PDC ) = (is_stop) ? 1 : 0;
+    MSTP(PDC) = (is_stop) ? 1 : 0;
     R_BSP_InterruptControl(BSP_INT_SRC_EMPTY, BSP_INT_CMD_FIT_INTERRUPT_ENABLE, &int_ctrl);
     R_BSP_RegisterProtectEnable(BSP_REG_PROTECT_LPC_CGC_SWR);
 
-    return ;
+    return;
 }
-
 
 /**
  * @brief PCDFI(受信データレディ)割り込みハンドラ
@@ -1058,12 +1022,9 @@ R_BSP_ATTRIB_STATIC_INTERRUPT void pdc_pcdfi_isr(void)
 {
     if (s_callback_functions.pcb_receive_data_ready != NULL)
     {
-        pdc_event_arg_t arg = { .event_id = PDC_EVT_ID_DATAREADY, .errors = 0 };
+        pdc_event_arg_t arg = {.event_id = PDC_EVT_ID_DATAREADY, .errors = 0};
         s_callback_functions.pcb_receive_data_ready(&arg);
     }
 
-    return ;
+    return;
 }
-
-
-

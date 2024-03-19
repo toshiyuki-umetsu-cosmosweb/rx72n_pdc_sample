@@ -6,7 +6,6 @@
 #ifndef COMMAND_TEST_DATA_H_
 #define COMMAND_TEST_DATA_H_
 
-void cmd_test_data(int ac, char **av);
-
+void cmd_test_data(int ac, char** av);
 
 #endif /* COMMAND_TEST_DATA_H_ */

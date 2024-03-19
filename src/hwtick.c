@@ -15,7 +15,7 @@ void hwtick_init(void)
     R_Config_CMTW0_Start();
     R_Config_TPU0_Start();
 
-    return ;
+    return;
 }
 
 /**
@@ -27,5 +27,3 @@ uint32_t hwtick_get(void)
 {
     return CMTW0.CMWCNT;
 }
-
-

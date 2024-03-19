@@ -31,17 +31,15 @@
 //@formatter:off
 static const uint32_t s_cks_coefs[4] = {
     32,  // 64*2^(2*0-1) = 32
-    128,  // 64*2^(2*1-1) = 128
-    512,  // 64*2^(2*2-1) = 512
-    2048  // 64*2^(2*3-1) = 2048
+    128, // 64*2^(2*1-1) = 128
+    512, // 64*2^(2*2-1) = 512
+    2048 // 64*2^(2*3-1) = 2048
 };
 //@formatter:on
 
-
-
-static int set_bitrate(volatile struct st_sci0 *reg, uint32_t bit_rate);
+static int set_bitrate(volatile struct st_sci0* reg, uint32_t bit_rate);
 static float calc_brr_value(uint32_t bit_rate, uint8_t cks);
-static uint32_t get_bit_rate(const volatile struct st_sci0 *reg);
+static uint32_t get_bit_rate(const volatile struct st_sci0* reg);
 static float calc_bit_rate(uint8_t cks, uint8_t brr);
 static int convert_status_to_errno(sci_iic_ch_dev_status_t status);
 static int convert_iic_return_to_errno(sci_iic_return_t ret_code);
@@ -79,8 +77,7 @@ void i2c_init(void)
         // Error.
     }
 
-
-    return ;
+    return;
 }
 
 /**
@@ -110,10 +107,11 @@ int i2c_set_bitrate(uint32_t bit_rate)
  * @param bit_rate ビットレート[bps] (bit_rate > 0)
  * @return 成功した場合には0, 失敗した場合にはエラー番号。
  */
-static int set_bitrate(volatile struct st_sci0 *reg, uint32_t bit_rate)
+static int set_bitrate(volatile struct st_sci0* reg, uint32_t bit_rate)
 {
     if ((reg->SCR.BIT.RE != 0) // 受信許可がON？
-            || (reg->SCR.BIT.TE != 0)) { // 送信許可がON?
+        || (reg->SCR.BIT.TE != 0))
+    { // 送信許可がON?
         return EBUSY;
     }
 
@@ -134,8 +132,8 @@ static int set_bitrate(volatile struct st_sci0 *reg, uint32_t bit_rate)
         uint32_t brr = (uint32_t)(brr_real);
 
         float brr_err = fabs(brr_real - (float)(brr)); // BRRの実数と整数の誤差を取得
-        if ((brr <= 255) // brrは設定可能な範囲？
-                && (brr_err < diff)) // BRRの浮動小数と整数の差は、現在値より小さい？
+        if ((brr <= 255)                               // brrは設定可能な範囲？
+            && (brr_err < diff))                       // BRRの浮動小数と整数の差は、現在値より小さい？
         {
             brr_value = (uint8_t)(brr);
             cks_value = cks;
@@ -181,7 +179,7 @@ static float calc_brr_value(uint32_t bit_rate, uint8_t cks)
  */
 uint32_t i2c_get_bitrate(void)
 {
-   return get_bit_rate(&SCI6);
+    return get_bit_rate(&SCI6);
 }
 
 /**
@@ -189,7 +187,7 @@ uint32_t i2c_get_bitrate(void)
  * @param reg レジスタセット
  * @return ビットレート
  */
-static uint32_t get_bit_rate(const volatile struct st_sci0 *reg)
+static uint32_t get_bit_rate(const volatile struct st_sci0* reg)
 {
     uint8_t cks = reg->SMR.BIT.CKS & 0x3;
     uint8_t brr = reg->BRR;
@@ -204,7 +202,6 @@ static uint32_t get_bit_rate(const volatile struct st_sci0 *reg)
     {
         bit_rate = calc_bit_rate(cks, brr);
     }
-
 
     return (uint32_t)(bit_rate);
 }
@@ -228,7 +225,7 @@ static float calc_bit_rate(uint8_t cks, uint8_t brr)
  * @param timeout_millis タイムアウト時間[ミリ秒]
  * @return 成功した場合には0, 失敗した場合にはエラー番号を返す。
  */
-int i2c_master_send_sync(uint8_t slave_addr, uint8_t *tx_data, uint16_t tx_len, uint32_t timeout_millis)
+int i2c_master_send_sync(uint8_t slave_addr, uint8_t* tx_data, uint16_t tx_len, uint32_t timeout_millis)
 {
     int retval;
 
@@ -249,7 +246,7 @@ int i2c_master_send_sync(uint8_t slave_addr, uint8_t *tx_data, uint16_t tx_len, 
  * @param timeout_millis タイムアウト時間[ミリ秒]
  * @return 成功した場合には0, 失敗した場合にはエラー番号を返す。
  */
-int i2c_master_receive_sync(uint8_t slave_addr, uint8_t *rx_bufp, uint16_t rx_len, uint32_t timeout_millis)
+int i2c_master_receive_sync(uint8_t slave_addr, uint8_t* rx_bufp, uint16_t rx_len, uint32_t timeout_millis)
 {
     int retval;
 
@@ -272,8 +269,7 @@ int i2c_master_receive_sync(uint8_t slave_addr, uint8_t *rx_bufp, uint16_t rx_le
  * @param timeout_millis タイムアウト時間[ミリ秒]
  * @return 成功した場合には0, 失敗した場合にはエラー番号を返す。
  */
-int i2c_master_send_and_receive_sync(uint8_t slave_addr, uint8_t *tx_data, uint16_t tx_len,
-        uint8_t *rx_bufp, uint16_t rx_len, uint32_t timeout_millis)
+int i2c_master_send_and_receive_sync(uint8_t slave_addr, uint8_t* tx_data, uint16_t tx_len, uint8_t* rx_bufp, uint16_t rx_len, uint32_t timeout_millis)
 {
     int retval;
 
@@ -296,33 +292,28 @@ static int convert_status_to_errno(sci_iic_ch_dev_status_t status)
 
     switch (status)
     {
-        case SCI_IIC_NO_INIT:
-        {
-            retval = ENOTSUP;
-            break;
-        }
-        case SCI_IIC_COMMUNICATION:
-        {
-            retval = EBUSY;
-            break;
-        }
-        case SCI_IIC_NACK:
-        {
-            retval = EACCES;
-            break;
-        }
-        case SCI_IIC_ERROR:
-        {
-            retval = EIO;
-            break;
-        }
-        case SCI_IIC_IDLE:
-        case SCI_IIC_FINISH:
-        default:
-        {
-            retval = 0;
-            break;
-        }
+    case SCI_IIC_NO_INIT: {
+        retval = ENOTSUP;
+        break;
+    }
+    case SCI_IIC_COMMUNICATION: {
+        retval = EBUSY;
+        break;
+    }
+    case SCI_IIC_NACK: {
+        retval = EACCES;
+        break;
+    }
+    case SCI_IIC_ERROR: {
+        retval = EIO;
+        break;
+    }
+    case SCI_IIC_IDLE:
+    case SCI_IIC_FINISH:
+    default: {
+        retval = 0;
+        break;
+    }
     }
     return retval;
 }
@@ -337,38 +328,33 @@ static int convert_iic_return_to_errno(sci_iic_return_t ret_code)
     int retval;
     switch (ret_code)
     {
-        case SCI_IIC_ERR_INVALID_ARG: // Invalid argument.
-        case SCI_IIC_ERR_INVALID_CHAN: // Invalid channel.
-        {
-            retval = EINVAL;
-            break;
-        }
-        case SCI_IIC_ERR_LOCK_FUNC: // Specified channel is operating for other.
-        case SCI_IIC_ERR_BUS_BUSY:
-        {
-            retval = EBUSY;
-            break;
-        }
-        case SCI_IIC_ERR_NO_INIT:
-        {
-            retval = ENOTSUP;
-            break;
-        }
-        case SCI_IIC_ERR_OTHER:
-        {
-            retval = EIO;
-            break;
-        }
-        case SCI_IIC_SUCCESS:
-        default:
-        {
-            retval = 0;
-            break;
-        }
+    case SCI_IIC_ERR_INVALID_ARG:  // Invalid argument.
+    case SCI_IIC_ERR_INVALID_CHAN: // Invalid channel.
+    {
+        retval = EINVAL;
+        break;
+    }
+    case SCI_IIC_ERR_LOCK_FUNC: // Specified channel is operating for other.
+    case SCI_IIC_ERR_BUS_BUSY: {
+        retval = EBUSY;
+        break;
+    }
+    case SCI_IIC_ERR_NO_INIT: {
+        retval = ENOTSUP;
+        break;
+    }
+    case SCI_IIC_ERR_OTHER: {
+        retval = EIO;
+        break;
+    }
+    case SCI_IIC_SUCCESS:
+    default: {
+        retval = 0;
+        break;
+    }
     }
     return retval;
 }
-
 
 /**
  * @brief バストランザクションが完了するまで待つ。
@@ -379,14 +365,12 @@ static int wait_transaction_done(uint32_t timeout_millis)
 {
     int retval;
     uint32_t begin = hwtick_get();
-    while (((hwtick_get() - begin) < timeout_millis)
-            && (s_sci_iic_info.dev_sts != SCI_IIC_IDLE) // 待機状態でない？
-            && (s_sci_iic_info.dev_sts != SCI_IIC_NACK) // NACK受信してない？
-            && (s_sci_iic_info.dev_sts != SCI_IIC_ERROR) // エラーになってない？
-            && (s_sci_iic_info.dev_sts != SCI_IIC_FINISH)) // トランザクション完了してない？
+    while (((hwtick_get() - begin) < timeout_millis) && (s_sci_iic_info.dev_sts != SCI_IIC_IDLE) // 待機状態でない？
+           && (s_sci_iic_info.dev_sts != SCI_IIC_NACK)                                           // NACK受信してない？
+           && (s_sci_iic_info.dev_sts != SCI_IIC_ERROR)                                          // エラーになってない？
+           && (s_sci_iic_info.dev_sts != SCI_IIC_FINISH))                                        // トランザクション完了してない？
     {
         // do nothing.
-
     }
     sci_iic_ch_dev_status_t status = s_sci_iic_info.dev_sts;
     if (status == SCI_IIC_COMMUNICATION)
@@ -412,13 +396,12 @@ static int wait_transaction_done(uint32_t timeout_millis)
  * @param pcallback 完了時に通知を受けるコールバック関数。通知不要な場合にはNULL
  * @return 成功した場合には0, 失敗した場合にはエラー番号を返す。
  */
-int i2c_master_send_async(uint8_t slave_addr, uint8_t *tx_data, uint16_t tx_len,
-        i2c_callback_func_t pcallback)
+int i2c_master_send_async(uint8_t slave_addr, uint8_t* tx_data, uint16_t tx_len, i2c_callback_func_t pcallback)
 {
     int retval;
     if ((slave_addr >= 0x80) // スレーブアドレスが不正？
-            || (tx_data == NULL) // 送信データがNULL？
-            || (tx_len == 0)) // 送信データサイズが0？
+        || (tx_data == NULL) // 送信データがNULL？
+        || (tx_len == 0))    // 送信データサイズが0？
     {
         retval = EINVAL;
     }
@@ -459,8 +442,7 @@ int i2c_master_send_async(uint8_t slave_addr, uint8_t *tx_data, uint16_t tx_len,
  * @param pcallback 完了時に通知を受けるコールバック関数。通知不要な場合にはNULL
  * @return 成功した場合には0, 失敗した場合にはエラー番号を返す。
  */
-bool i2c_master_receive_async(uint8_t slave_addr, uint8_t *rx_bufp, uint16_t rx_len,
-        i2c_callback_func_t pcallback)
+bool i2c_master_receive_async(uint8_t slave_addr, uint8_t* rx_bufp, uint16_t rx_len, i2c_callback_func_t pcallback)
 {
     return i2c_master_send_and_receive_async(slave_addr, NULL, 0, rx_bufp, rx_len, pcallback);
 }
@@ -476,14 +458,13 @@ bool i2c_master_receive_async(uint8_t slave_addr, uint8_t *rx_bufp, uint16_t rx_
  * @param pcallback 完了時に通知を受けるコールバック関数。通知不要な場合にはNULL
  * @return 成功した場合にはtrue, 失敗した場合にはfalseを返します。
  */
-int i2c_master_send_and_receive_async(uint8_t slave_addr, uint8_t *tx_data, uint16_t tx_len,
-        uint8_t *rx_bufp, uint16_t rx_len, i2c_callback_func_t pcallback)
+int i2c_master_send_and_receive_async(uint8_t slave_addr, uint8_t* tx_data, uint16_t tx_len, uint8_t* rx_bufp, uint16_t rx_len, i2c_callback_func_t pcallback)
 {
     int retval;
 
-    if ((slave_addr >= 0x80) // スレーブアドレスが不正？
-            || ((tx_len > 0) && (tx_data == NULL)) // 送信指定があり、送信データがNULL？
-            || ((rx_len > 0) && (rx_bufp == NULL))) // 受信指定があり、受信バッファがNULL？
+    if ((slave_addr >= 0x80)                    // スレーブアドレスが不正？
+        || ((tx_len > 0) && (tx_data == NULL))  // 送信指定があり、送信データがNULL？
+        || ((rx_len > 0) && (rx_bufp == NULL))) // 受信指定があり、受信バッファがNULL？
     {
         retval = EINVAL;
     }
@@ -521,7 +502,6 @@ static void on_transaction_done(void)
     }
 }
 
-
 /**
  * @brief バスビジーかどうかを判定する。
  * @return バスビジーの場合にはtrue, それ以外はfalse.
@@ -534,8 +514,6 @@ bool i2c_is_busy(void)
     if (R_SCI_IIC_GetStatus(&s_sci_iic_info, &st) == SCI_IIC_SUCCESS)
     {
         is_busy = ((st.LONG & SCI_IIC_STATUS_BUSY) != 0) ? true : false;
-
     }
     return is_busy;
 }
-

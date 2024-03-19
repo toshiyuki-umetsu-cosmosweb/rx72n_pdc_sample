@@ -41,22 +41,22 @@
  */
 #define RX_PDC_TRANSFER_DATA_SIZE (4)
 
-struct dma_param {
+struct dma_param
+{
     uintptr_t addr;
-    uint8_t unit; // PCDRが32bit幅で4バイト単位なので、転送単位は4のみ。
-    uint16_t block_size; // PDCでは32バイトごとにDMA転送要求が発行されるので、32/4=8固定。
+    uint8_t unit;         // PCDRが32bit幅で4バイト単位なので、転送単位は4のみ。
+    uint16_t block_size;  // PDCでは32バイトごとにDMA転送要求が発行されるので、32/4=8固定。
     uint16_t block_count; // 必要な領域に合わせて変更
-
 };
 
-static uint32_t calc_dma_area_total_size(const struct dma_param *paramp);
+static uint32_t calc_dma_area_total_size(const struct dma_param* paramp);
 static uint32_t calc_received_length(void);
 static bool set_transfer_irqs_enable(bool is_enabled);
 static bool update_transfer_size(uint32_t hsize, uint32_t vsize, uint32_t bpw);
 static bool setup_dmac_request(int area);
 static void on_dma_request_end(int status);
-static void on_frame_end(const pdc_event_arg_t *arg);
-static void on_error(const pdc_event_arg_t *arg);
+static void on_frame_end(const pdc_event_arg_t* arg);
+static void on_error(const pdc_event_arg_t* arg);
 static int convert_pdc_event_to_error(int event, uint32_t errors);
 
 /**
@@ -72,20 +72,20 @@ static uint8_t s_bpp;
  * @brief DMA転送情報
  */
 //@formatter:off
-static struct dma_param s_dma_param[DMA_AREA_COUNT] = {
-    { // RAM1割り当て
-        .addr = (uintptr_t)(RAM1_END_ADDR + 1UL - RAM_USEAREA1_SIZE),
-        .unit = RX_PDC_TRANSFER_DATA_SIZE,
-        .block_size = (RX_PDC_TRANSFER_REQ_UNIT / RX_PDC_TRANSFER_DATA_SIZE),
-        .block_count = 1,
-    },
-    { // RAM2割り当て
-        .addr = (uintptr_t)(RAM2_END_ADDR + 1UL - RAM_USEAREA2_SIZE),
-        .unit = RX_PDC_TRANSFER_DATA_SIZE,
-        .block_size = (RX_PDC_TRANSFER_REQ_UNIT / RX_PDC_TRANSFER_DATA_SIZE),
-        .block_count = 1,
-    }
-};
+static struct dma_param s_dma_param[DMA_AREA_COUNT] = {{
+                                                           // RAM1割り当て
+                                                           .addr = (uintptr_t)(RAM1_END_ADDR + 1UL - RAM_USEAREA1_SIZE),
+                                                           .unit = RX_PDC_TRANSFER_DATA_SIZE,
+                                                           .block_size = (RX_PDC_TRANSFER_REQ_UNIT / RX_PDC_TRANSFER_DATA_SIZE),
+                                                           .block_count = 1,
+                                                       },
+                                                       {
+                                                           // RAM2割り当て
+                                                           .addr = (uintptr_t)(RAM2_END_ADDR + 1UL - RAM_USEAREA2_SIZE),
+                                                           .unit = RX_PDC_TRANSFER_DATA_SIZE,
+                                                           .block_size = (RX_PDC_TRANSFER_REQ_UNIT / RX_PDC_TRANSFER_DATA_SIZE),
+                                                           .block_count = 1,
+                                                       }};
 //@formatter:on
 /**
  * @brief DMA転送中のエリア番号
@@ -100,7 +100,7 @@ static uint32_t s_data_size;
 /**
  * @brief フレームキャプチャ完了時コールバック
  */
-static void (*s_end_callback)(const struct pdc_status *pstat);
+static void (*s_end_callback)(const struct pdc_status* pstat);
 
 /**
  * @brief PDC初期化処理を行う。
@@ -119,19 +119,19 @@ void pdc_init(void)
     s_pdc_config.int_priority_pcdfi = PDC_INTERRUPT_PRIORITY;
     s_pdc_config.int_priority_pcefi = PDC_INTERRUPT_PRIORITY;
     s_pdc_config.int_priority_pceri = PDC_INTERRUPT_PRIORITY;
-    s_pdc_config.interrupt_setting.dfie_ien = false; // 受信データ割り込みしない（DMAを使用する）
-    s_pdc_config.interrupt_setting.feie_ien = false; // フレームエンド割り込みしない（キャプチャ中だけONにする）
-    s_pdc_config.interrupt_setting.ovie_ien = false; // オーバーランエラー割り込みしない（キャプチャ中だけONにする）
+    s_pdc_config.interrupt_setting.dfie_ien = false;  // 受信データ割り込みしない（DMAを使用する）
+    s_pdc_config.interrupt_setting.feie_ien = false;  // フレームエンド割り込みしない（キャプチャ中だけONにする）
+    s_pdc_config.interrupt_setting.ovie_ien = false;  // オーバーランエラー割り込みしない（キャプチャ中だけONにする）
     s_pdc_config.interrupt_setting.udrie_ien = false; // アンダーランエラー割り込みしない（キャプチャ中だけONにする）
     s_pdc_config.interrupt_setting.verie_ien = false; // 垂直方向ライン数設定エラー割り込みしない（キャプチャ中だけONにする）
     s_pdc_config.interrupt_setting.herie_ien = false; // 水平方向バイト数設定エラー割り込みしない（キャプチャ中だけONにする）
 
-    s_pdc_config.is_vsync_hactive = false; // Vsync Low Active
-    s_pdc_config.is_hsync_hactive = true; // Hsync High Active
-    s_pdc_config.capture_pos.vst_position = 10; // 垂直方向ライン開始 = 垂直方向バックポーチ。
-                                                // VSync検出後、バックポーチ分のライン数後にアクティブデータが入る。
-    s_pdc_config.capture_size.vsz_size = 480; // 480ライン
-    s_pdc_config.capture_pos.hst_position = 612; // 水平方向開始位置 = 水平方向のバックポーチ
+    s_pdc_config.is_vsync_hactive = false;        // Vsync Low Active
+    s_pdc_config.is_hsync_hactive = true;         // Hsync High Active
+    s_pdc_config.capture_pos.vst_position = 10;   // 垂直方向ライン開始 = 垂直方向バックポーチ。
+                                                  // VSync検出後、バックポーチ分のライン数後にアクティブデータが入る。
+    s_pdc_config.capture_size.vsz_size = 480;     // 480ライン
+    s_pdc_config.capture_pos.hst_position = 612;  // 水平方向開始位置 = 水平方向のバックポーチ
     s_pdc_config.capture_size.hsz_size = 640 * 2; // 640 * 2 = 1280バイト (YUVUなので2倍)
 
     s_pdc_config.p_callback.pcb_receive_data_ready = NULL;
@@ -148,7 +148,7 @@ void pdc_init(void)
     s_dma_area = 0;
     update_transfer_size(640, 480, 2); // 640 * 480 * YUV 4:2:2(2byte/pixel)
 
-    return ;
+    return;
 }
 
 /**
@@ -158,9 +158,8 @@ void pdc_update(void)
 {
     rx_driver_pdc_update();
 
-    return ;
+    return;
 }
-
 
 /**
  * @brief PDCがキャプチャ動作中かどうかを取得する。
@@ -183,8 +182,7 @@ bool pdc_reset(uint16_t timeout_millis)
         return false;
     }
     uint32_t begin = hwtick_get();
-    while (rx_driver_pdc_is_resetting()
-            && ((hwtick_get() - begin) < timeout_millis))
+    while (rx_driver_pdc_is_resetting() && ((hwtick_get() - begin) < timeout_millis))
     {
         // do nothing.
     }
@@ -208,7 +206,7 @@ bool pdc_set_signal_polarity(bool is_hsync_hactive, bool is_vsync_hactive)
  * @param is_vsync_hactive 垂直同期信号極性の設定を取得する変数
  * @return 成功した場合には0, 失敗した場合にはエラー番号
  */
-bool pdc_get_signal_polarity(bool *is_hsync_hactive, bool *is_vsync_hactive)
+bool pdc_get_signal_polarity(bool* is_hsync_hactive, bool* is_vsync_hactive)
 {
     return rx_driver_pdc_get_signal_polarity(is_hsync_hactive, is_vsync_hactive) == 0;
 }
@@ -264,7 +262,7 @@ bool pdc_set_capture_range(uint16_t xst, uint16_t xsize, uint16_t yst, uint16_t 
  * @param bpp 1ピクセルあたりのバイト数
  * @return 成功した場合には0, 失敗した場合にはエラー番号。
  */
-bool pdc_get_capture_range(uint16_t *xst, uint16_t *xsize, uint16_t *yst, uint16_t *ysize, uint8_t *bpp)
+bool pdc_get_capture_range(uint16_t* xst, uint16_t* xsize, uint16_t* yst, uint16_t* ysize, uint8_t* bpp)
 {
     pdc_position_t pos;
     pdc_capture_size_t size;
@@ -297,15 +295,15 @@ bool pdc_get_capture_range(uint16_t *xst, uint16_t *xsize, uint16_t *yst, uint16
     return true;
 }
 
-
 /**
  * @brief キャプチャを開始する。
  * @param callback キャプチャ完了時に通知を受け取るコールバック関数
  * @return 成功した場合にはtrue, 失敗した場合にはfalseを返す。
  */
-bool pdc_start_capture(void (*callback)(const struct pdc_status *pstat))
+bool pdc_start_capture(void (*callback)(const struct pdc_status* pstat))
 {
-    if (pdc_is_running()) {
+    if (pdc_is_running())
+    {
         return false;
     }
 
@@ -363,7 +361,7 @@ bool pdc_stop_capture(void)
  * @param pstat ステータスを取得する構造体
  * @return 成功した場合にはtrue, 失敗した場合にはfalse.
  */
-bool pdc_get_status(struct pdc_status *pstat)
+bool pdc_get_status(struct pdc_status* pstat)
 {
     if (pstat == NULL)
     {
@@ -390,7 +388,7 @@ bool pdc_get_status(struct pdc_status *pstat)
  * @param paramp DMAリクエストパラメータ
  * @return 総転送サイズ
  */
-static uint32_t calc_dma_area_total_size(const struct dma_param *paramp)
+static uint32_t calc_dma_area_total_size(const struct dma_param* paramp)
 {
     return ((uint32_t)(paramp->unit) * (uint32_t)(paramp->block_size) * (uint32_t)(paramp->block_count));
 }
@@ -406,7 +404,7 @@ static uint32_t calc_received_length(void)
 
     for (int i = 0; i < dma_area; i++)
     {
-        const struct dma_param *paramp = &(s_dma_param[i]);
+        const struct dma_param* paramp = &(s_dma_param[i]);
         received_len += calc_dma_area_total_size(paramp);
     }
     if (s_dma_area < DMA_AREA_COUNT)
@@ -423,7 +421,6 @@ static uint32_t calc_received_length(void)
     return received_len;
 }
 
-
 /**
  * @brief 転送関連のIRQをまとめて有効/無効設定する
  * @param is_enabled 割り込みを有効にする場合にはtrue, それ以外はfalse.
@@ -435,8 +432,8 @@ static bool set_transfer_irqs_enable(bool is_enabled)
     // お試しで割り込みしてみる。
     s_pdc_config.interrupt_setting.dfie_ien = is_enabled; // データレディ割り込み許可
 #endif
-    s_pdc_config.interrupt_setting.feie_ien = is_enabled; // フレームエンド割り込み
-    s_pdc_config.interrupt_setting.ovie_ien = is_enabled; // オーバーフロー割り込み
+    s_pdc_config.interrupt_setting.feie_ien = is_enabled;  // フレームエンド割り込み
+    s_pdc_config.interrupt_setting.ovie_ien = is_enabled;  // オーバーフロー割り込み
     s_pdc_config.interrupt_setting.udrie_ien = is_enabled; // アンダーフロー割り込み
     s_pdc_config.interrupt_setting.verie_ien = is_enabled; // 垂直ライン数設定エラー割り込み
     s_pdc_config.interrupt_setting.herie_ien = is_enabled; // 水平ライン数設定エラー割り込み
@@ -459,7 +456,6 @@ static bool update_transfer_size(uint32_t hsize, uint32_t vsize, uint32_t bpw)
     {
         return false;
     }
-
 
     if (total <= RAM_USEAREA1_SIZE) // サイズはRAM1領域だけで十分？
     {
@@ -495,7 +491,7 @@ static bool setup_dmac_request(int area)
         return false;
     }
 
-    struct dma_param *paramp = &(s_dma_param[area]);
+    struct dma_param* paramp = &(s_dma_param[area]);
     if (paramp->block_count == 0)
     {
         return false;
@@ -506,7 +502,6 @@ static bool setup_dmac_request(int area)
 
     return true;
 }
-
 
 /**
  * @brief DMA要求が完了したときに通知を受け取る
@@ -520,14 +515,14 @@ static void on_dma_request_end(int status)
         setup_dmac_request(s_dma_area);
     }
 
-    return ;
+    return;
 }
 
 /**
  * @brief PDCのフレーム終了を検知したときに通知を受け取る。
  * @param arg PDCイベントデータ
  */
-static void on_frame_end(const pdc_event_arg_t * arg)
+static void on_frame_end(const pdc_event_arg_t* arg)
 {
     // 残りデータがあったら追加する(たぶん必要だと思う)
     if (PDC.PCSR.BIT.FEMPF != 0) // FIFOはエンプティでない？
@@ -537,7 +532,6 @@ static void on_frame_end(const pdc_event_arg_t * arg)
             volatile uint32_t word = PDC.PCDR.LONG;
 
             // TODO : バッファに追加(リニアじゃないと面倒な処理がある？？)
-
         }
     }
 
@@ -556,13 +550,13 @@ static void on_frame_end(const pdc_event_arg_t * arg)
         s_end_callback(&status);
     }
 
-    return ;
+    return;
 }
 /**
  * @brief PDCのエラーを検知したときに通知を受け取る。
  * @param arg PDCイベントデータ
  */
-static void on_error(const pdc_event_arg_t *arg)
+static void on_error(const pdc_event_arg_t* arg)
 {
     R_Config_DMAC3_Stop();
     set_transfer_irqs_enable(false);
@@ -590,7 +584,7 @@ static void on_error(const pdc_event_arg_t *arg)
         s_end_callback(&state);
     }
 
-    return ;
+    return;
 }
 
 /**
@@ -603,38 +597,35 @@ static int convert_pdc_event_to_error(int event, uint32_t errors)
     int retval;
     switch (event)
     {
-        case PDC_EVT_ID_ERROR:
+    case PDC_EVT_ID_ERROR: {
+        if ((errors & PDC_ERROR_OVERRUN) != 0)
         {
-            if ((errors & PDC_ERROR_OVERRUN) != 0)
-            {
-                retval = EOVERFLOW;
-            }
-            else if ((errors & PDC_ERROR_UNDERRUN) != 0)
-            {
-                retval = ENODATA;
-            }
-            else if ((errors & (PDC_ERROR_HPARAM | PDC_ERROR_VPARAM)) != 0)
-            {
-                retval = EINVAL;
-            }
-            else
-            {
-                retval = EIO;
-            }
-            break;
+            retval = EOVERFLOW;
         }
-        case PDC_EVT_ID_TRANSFER_TIMEOUT:
+        else if ((errors & PDC_ERROR_UNDERRUN) != 0)
         {
-            retval = ETIMEDOUT;
-            break;
+            retval = ENODATA;
         }
-        case PDC_EVT_ID_DATAREADY:
-        case PDC_EVT_ID_FRAMEEND:
-        default:
+        else if ((errors & (PDC_ERROR_HPARAM | PDC_ERROR_VPARAM)) != 0)
         {
-            retval = 0;
-            break;
+            retval = EINVAL;
         }
+        else
+        {
+            retval = EIO;
+        }
+        break;
+    }
+    case PDC_EVT_ID_TRANSFER_TIMEOUT: {
+        retval = ETIMEDOUT;
+        break;
+    }
+    case PDC_EVT_ID_DATAREADY:
+    case PDC_EVT_ID_FRAMEEND:
+    default: {
+        retval = 0;
+        break;
+    }
     }
 
     return retval;

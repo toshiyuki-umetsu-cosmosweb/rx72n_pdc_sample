@@ -6,7 +6,6 @@
 #ifndef COMMAND_PDC_H_
 #define COMMAND_PDC_H_
 
-void cmd_pdc(int ac, char **av);
-
+void cmd_pdc(int ac, char** av);
 
 #endif /* COMMAND_PDC_H_ */
