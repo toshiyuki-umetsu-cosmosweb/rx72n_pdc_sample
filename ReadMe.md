@@ -11,17 +11,56 @@ https://www.hokutodenshi.co.jp/7/HSBRX72N176.htm
 
 Renesas e2studio 2022-07
 GCC for Renesas RX 8.4.0.202204
+Renesas E1 Emulator
 
 # 何を見るの？
 
-* PDCでデータをRAM上に蓄えて、USBで取り出す実験をします。
-
+* PDCでデータをRAM上に蓄えて、USBで取り出せるか、実験をします。
+オンボードRAM上に640x480@30fpsの1フレームデータをキャプチャ操作したとき、転送が間に合うのかどうかと、
+DMACの動作を確認します。
 
 # 動作仕様
 
-* 
 * USB Mini-B CDC でホストから操作。
-* 
+* PDC 動作
+  RAM1の後半256KBと、RAM2の512KBを使用してキャプチャします。
+  DMAはDMAC3+CGドライバで行っています。
+* GLCDCを使用してテスト信号を出力。バックグラウンドカラー(B)と同期信号のみ。
+  640x480@30fps PixelClock=30MHz, HSync=15kHz, Vsync=30Hz
+* I2C 動作
+  カメラのイメージセンサとI2Cで接続して操作する想定で、インタフェースを設けています。 
+  
+# コマンド
+
+* **args**
+コマンド引数を表示します。トークン分割のテスト用です。
+* **help**
+コマンド一覧を表示します。
+* **reset**
+ソフトウェアリセットを実行します。
+* **i2c bit-rate [bit-rate#]**
+I2Cバスのビットレートを設定/取得します。
+* **i2c slave_addr# [ send tx0# [ tx1# [ ... ] ] ] [ recv rx_len# ]**
+i2c I2Cバスを介してデータを送受信します。slave_addr#は7bit形式です。
+最大で16バイトまで送受信できます。
+* **test-data output [on|off]**
+GLCDCを使用した、テスト信号出力をON/OFFします。
+* **test-data data [d#]**
+テストデータ用データ値を指定します。
+* **pdc capture-range**
+キャプチャ範囲を設定/取得します。
+* **pdc signal-polarity**
+HSYNC,VSYNCの極性を設定/取得します。
+* **pdc reset**
+PDCをリセットします。(ステータスレジスタがリセットされます。)
+PDC のリセットはPixelClock入力に同期して行われる仕様のため、
+PixelClock入力がないと失敗します。
+* **pdc capture**
+PDCのキャプチャを実行します。
+* **pdc stop**
+PDCのキャプチャを停止(PCCR1.PCE=0)します。
+* **pdc state**
+PDCのステータスを表示します。
 
 # I/Oメモ
 
@@ -53,8 +92,6 @@ PCLKBで動作し、対応可能なPixeclClockは PixcelClock <= PCLKB * 0.6ま�
 |--:|---|:-:|:-:|---|
 |7|P00/SSDA6|I/O|J2.25|I2C Data|
 |8|P01/SSCL6|Out|J2.24|I2C Clock|
-
-
 
 ## GLCDC
 
