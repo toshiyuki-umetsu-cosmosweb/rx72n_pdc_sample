@@ -34,8 +34,8 @@ Includes
 #include "Config_CMTW0.h"
 #include "Config_TPU0.h"
 #include "Config_ELC.h"
-#include "Config_DMAC7.h"
 #include "Config_PORT.h"
+#include "Config_DMAC3.h"
 
 /***********************************************************************************************************************
 Macro definitions (Register bit)

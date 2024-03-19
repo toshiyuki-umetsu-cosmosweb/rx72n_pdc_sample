@@ -37,8 +37,8 @@ Includes
 #include "Config_CMTW0.h"
 #include "Config_TPU0.h"
 #include "Config_ELC.h"
-#include "Config_DMAC7.h"
 #include "Config_PORT.h"
+#include "Config_DMAC3.h"
 #include "r_smc_cgc.h"
 #include "r_smc_interrupt.h"
 /* Start user code for include. Do not edit comment generated here */
@@ -90,7 +90,7 @@ void R_Systeminit(void)
     R_Config_PORT_Create();
     R_Config_CMTW0_Create();
     R_Config_TPU0_Create();
-    R_Config_DMAC7_Create();
+    R_Config_DMAC3_Create();
     R_Config_ELC_Create();
 
     /* Register undefined interrupt */

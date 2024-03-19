@@ -11,6 +11,7 @@
 
 bool parse_boolean(const char *s, bool *pbool);
 bool parse_u8(const char *s, uint8_t *pval);
+bool parse_u16(const char *s, uint16_t *pval);
 bool parse_u32(const char *s, uint32_t *pval);
 
 #endif /* UTILS_H_ */

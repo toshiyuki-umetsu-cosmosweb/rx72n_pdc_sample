@@ -18,10 +18,10 @@
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
-* File Name        : Config_DMAC7.c
+* File Name        : Config_DMAC3.c
 * Component Version: 1.8.0
 * Device(s)        : R5F572NNDxFC
-* Description      : This file implements device driver for Config_DMAC7.
+* Description      : This file implements device driver for Config_DMAC3.
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -34,7 +34,7 @@ Pragma directive
 Includes
 ***********************************************************************************************************************/
 #include "r_cg_macrodriver.h"
-#include "Config_DMAC7.h"
+#include "Config_DMAC3.h"
 /* Start user code for include. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
@@ -46,77 +46,89 @@ Global variables and functions
 /* End user code. Do not edit comment generated here */
 
 /***********************************************************************************************************************
-* Function Name: R_Config_DMAC7_Create
-* Description  : This function initializes the DMAC7 channel
+* Function Name: R_Config_DMAC3_Create
+* Description  : This function initializes the DMAC3 channel
 * Arguments    : None
 * Return Value : None
 ***********************************************************************************************************************/
 
-void R_Config_DMAC7_Create(void)
+void R_Config_DMAC3_Create(void)
 {
     /* Cancel DMAC/DTC module stop state in LPC */
     MSTP(DMAC) = 0U;
 
     /* Disable DMAC interrupts */
-    IEN(DMAC,DMAC74I) = 0U;
+    IEN(DMAC,DMAC3I) = 0U;
 
-    /* Disable DMAC7 transfer */
-    DMAC7.DMCNT.BIT.DTE = 0U;
+    /* Disable DMAC3 transfer */
+    DMAC3.DMCNT.BIT.DTE = 0U;
 
-    /* Set DMAC7 activation source */
-    ICU.DMRSR7 = _61_DMAC7_ACTIVATION_SOURCE;
+    /* Set DMAC3 activation source */
+    ICU.DMRSR3 = _61_DMAC3_ACTIVATION_SOURCE;
 
-    /* Set DMAC7 transfer address update and extended repeat setting */
-    DMAC7.DMAMD.WORD = _0000_DMAC_SRC_ADDR_UPDATE_FIXED | _0000_DMAC_DST_ADDR_UPDATE_FIXED | 
-                       _0000_DMAC7_SRC_EXT_RPT_AREA | _0000_DMAC7_DST_EXT_RPT_AREA;
+    /* Set DMAC3 transfer address update and extended repeat setting */
+    DMAC3.DMAMD.WORD = _0000_DMAC_SRC_ADDR_UPDATE_FIXED | _0080_DMAC_DST_ADDR_UPDATE_INCREMENT | 
+                       _0000_DMAC3_SRC_EXT_RPT_AREA | _0000_DMAC3_DST_EXT_RPT_AREA;
 
-    /* Set DMAC7 transfer mode, data size and repeat area */
-    DMAC7.DMTMD.WORD = _8000_DMAC_TRANS_MODE_BLOCK | _0000_DMAC_REPEAT_AREA_DESTINATION | 
+    /* Set DMAC3 transfer mode, data size and repeat area */
+    DMAC3.DMTMD.WORD = _8000_DMAC_TRANS_MODE_BLOCK | _0000_DMAC_REPEAT_AREA_DESTINATION | 
                        _0200_DMAC_TRANS_DATA_SIZE_32 | _0001_DMAC_TRANS_REQ_SOURCE_INT;
 
-    /* Set DMAC7 interrupt flag control */
-    DMAC7.DMCSL.BYTE = _00_DMAC_INT_TRIGGER_FLAG_CLEAR;
+    /* Set DMAC3 interrupt flag control */
+    DMAC3.DMCSL.BYTE = _00_DMAC_INT_TRIGGER_FLAG_CLEAR;
 
-    /* Set DMAC7 source address */
-    DMAC7.DMSAR = (void *)_00000000_DMAC7_SRC_ADDR;
+    /* Set DMAC3 source address */
+    DMAC3.DMSAR = (void *)_00000000_DMAC3_SRC_ADDR;
 
-    /* Set DMAC7 destination address */
-    DMAC7.DMDAR = (void *)_00000000_DMAC7_DST_ADDR;
+    /* Set DMAC3 destination address */
+    DMAC3.DMDAR = (void *)_00000000_DMAC3_DST_ADDR;
 
-    /* Set DMAC7 block size */
-    DMAC7.DMCRA = _00010001_DMAC7_DMCRA_COUNT;
+    /* Set DMAC3 block size */
+    DMAC3.DMCRA = _00010001_DMAC3_DMCRA_COUNT;
 
-    /* Set DMAC7 block transfer count */
-    DMAC7.DMCRB = _0001_DMAC7_DMCRB_BLK_RPT_COUNT;
+    /* Set DMAC3 block transfer count */
+    DMAC3.DMCRB = _0001_DMAC3_DMCRB_BLK_RPT_COUNT;
+
+    /* Set DMAC3 interrupt settings */
+    DMAC3.DMINT.BIT.DTIE = 1U;
+
+    /* Set DMAC3 priority level */
+    IPR(DMAC,DMAC3I) = _02_DMAC_PRIORITY_LEVEL2;
 
     /* Enable DMAC activation */
     DMAC.DMAST.BIT.DMST = 1U;
     
-    R_Config_DMAC7_Create_UserInit();
+    R_Config_DMAC3_Create_UserInit();
 }
 
 /***********************************************************************************************************************
-* Function Name: R_Config_DMAC7_Start
-* Description  : This function enable the DMAC7 activation
+* Function Name: R_Config_DMAC3_Start
+* Description  : This function enable the DMAC3 activation
 * Arguments    : None
 * Return Value : None
 ***********************************************************************************************************************/
 
-void R_Config_DMAC7_Start(void)
+void R_Config_DMAC3_Start(void)
 {
-    DMAC7.DMCNT.BIT.DTE = 1U;
+    /* Enable DMAC3 interrupt in ICU */
+    IR(DMAC,DMAC3I) = 0U;
+    IEN(DMAC,DMAC3I) = 1U;
+    DMAC3.DMCNT.BIT.DTE = 1U;
 }
 
 /***********************************************************************************************************************
-* Function Name: R_Config_DMAC7_Stop
-* Description  : This function disable the DMAC7 activation
+* Function Name: R_Config_DMAC3_Stop
+* Description  : This function disable the DMAC3 activation
 * Arguments    : None
 * Return Value : None
 ***********************************************************************************************************************/
 
-void R_Config_DMAC7_Stop(void)
+void R_Config_DMAC3_Stop(void)
 {
-    DMAC7.DMCNT.BIT.DTE = 0U;
+    /* Disable CMI3 interrupt in ICU */
+    IR(DMAC,DMAC3I) = 0U;
+    IEN(DMAC,DMAC3I) = 0U;
+    DMAC3.DMCNT.BIT.DTE = 0U;
 }
 
 /* Start user code for adding. Do not edit comment generated here */

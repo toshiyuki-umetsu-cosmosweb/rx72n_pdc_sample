@@ -101,7 +101,7 @@
 #define LCD_CH0_TCON_PIN_VSYNC              (GLCDC_TCON_PIN_1)          /* output.tcon_vsync */
 #define LCD_CH0_TCON_PIN_DE                 (GLCDC_TCON_PIN_NON)          /* output.tcon_de */
 
-#define LCD_CH0_TCON_POL_HSYNC              (GLCDC_SIGNAL_POLARITY_LOACTIVE)  /* output.hsync_polarity */
+#define LCD_CH0_TCON_POL_HSYNC              (GLCDC_SIGNAL_POLARITY_HIACTIVE)  /* output.hsync_polarity */
 #define LCD_CH0_TCON_POL_VSYNC              (GLCDC_SIGNAL_POLARITY_LOACTIVE)  /* output.vsync_polarity */
 #define LCD_CH0_TCON_POL_DE                 (GLCDC_SIGNAL_POLARITY_HIACTIVE)  /* output.data_enable_polarity */
 

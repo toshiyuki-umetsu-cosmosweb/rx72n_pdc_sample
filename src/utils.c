@@ -70,7 +70,28 @@ bool parse_u8(const char *s, uint8_t *pval)
 
     return is_parse_succeed;
 }
+/**
+ * @brief 文字列sを符号なし16bit整数として解析する。
+ * @param s 文字列
+ * @param pval 値を取得する変数のアドレス
+ * @return 解析成功した場合にはtrue, 失敗した場合にはfalse.
+ */
+bool parse_u16(const char *s, uint16_t *pval)
+{
+    bool is_parse_succeed = false;
+    char *p;
+    uint32_t d = strtoul(s, &p, 0);
+    if ((p != NULL) && (*p == '\0'))
+    {
+        if (d <= UINT16_MAX)
+        {
+            (*pval) = (uint16_t)(d & 0xFFFF);
+            is_parse_succeed = true;
+        }
+    }
 
+    return is_parse_succeed;
+}
 /**
  * @brief 文字列sを符号なし32bit整数として解析する。
  * @param s 文字列

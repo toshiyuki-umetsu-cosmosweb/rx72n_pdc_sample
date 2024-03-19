@@ -46,6 +46,9 @@ Typedef definitions
 /***********************************************************************************************************************
 Global functions
 ***********************************************************************************************************************/
+/* DMAC DMAC3I */
+void r_Config_DMAC3_dmac3i_interrupt(void) __attribute__ ((interrupt(".rvectors",VECT(DMAC,DMAC3I))));
+
 /* Start user code for function. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 #endif

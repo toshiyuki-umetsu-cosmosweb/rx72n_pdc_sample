@@ -18,10 +18,10 @@
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
-* File Name        : Config_DMAC7_user.c
+* File Name        : Config_DMAC3_user.c
 * Component Version: 1.8.0
 * Device(s)        : R5F572NNDxFC
-* Description      : This file implements device driver for Config_DMAC7.
+* Description      : This file implements device driver for Config_DMAC3.
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -34,8 +34,10 @@ Pragma directive
 Includes
 ***********************************************************************************************************************/
 #include "r_cg_macrodriver.h"
-#include "Config_DMAC7.h"
+#include "Config_DMAC3.h"
 /* Start user code for include. Do not edit comment generated here */
+#include <stddef.h>
+#include <errno.h>
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
@@ -43,20 +45,116 @@ Includes
 Global variables and functions
 ***********************************************************************************************************************/
 /* Start user code for global. Do not edit comment generated here */
+static void (*s_dma_done_callback)(int) = NULL;
 /* End user code. Do not edit comment generated here */
 
 /***********************************************************************************************************************
-* Function Name: R_Config_DMAC7_Create_UserInit
-* Description  : This function adds user code after initializing the DMAC7 channel
+* Function Name: R_Config_DMAC3_Create_UserInit
+* Description  : This function adds user code after initializing the DMAC3 channel
 * Arguments    : None
 * Return Value : None
 ***********************************************************************************************************************/
 
-void R_Config_DMAC7_Create_UserInit(void)
+void R_Config_DMAC3_Create_UserInit(void)
 {
     /* Start user code for user init. Do not edit comment generated here */
+    s_dma_done_callback = NULL;
+    DMAC3.DMSAR = &(PDC.PCDR.LONG);
+    /* End user code. Do not edit comment generated here */
+}
+
+/***********************************************************************************************************************
+* Function Name: r_Config_DMAC3_dmac3i_interrupt
+* Description  : This function is dmac3i interrupt service routine
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+
+void r_Config_DMAC3_dmac3i_interrupt(void)
+{
+    if (DMAC3.DMSTS.BIT.DTIF == 1U)
+    {
+        DMAC3.DMSTS.BIT.DTIF = 0U;
+        r_dmac3_callback_transfer_end();
+    }
+}
+
+/***********************************************************************************************************************
+* Function Name: r_dmac3_callback_transfer_end
+* Description  : This function is dmac3 transfer end callback function
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+
+static void r_dmac3_callback_transfer_end(void)
+{
+    /* Start user code for r_dmac3_callback_transfer_end. Do not edit comment generated here */
+    if (s_dma_done_callback != NULL)
+    {
+        s_dma_done_callback(0);
+    }
     /* End user code. Do not edit comment generated here */
 }
 
 /* Start user code for adding. Do not edit comment generated here */
+/**
+ * @brief Setup DMAC3 transfer destination.
+ *        DMAC3 is used for PDC.
+ *        Total transfer size is 'unit * block_size * block_count'.
+ * @param addr Destination address.
+ * @param unit Transfer unit. (1, 2, 4)
+ * @param block_size Block size.
+ * @param block_count Block count.
+ * @param pcallback Callback function which called at transfer done.
+ * @return On success, return 0. Otherwise, error number returned.
+ */
+int R_Config_DMAC3_Setup(uintptr_t addr, uint8_t unit, uint16_t block_size, uint16_t block_count,
+        void (*pcallback)(int status))
+{
+    if (DMAC3.DMCNT.BIT.DTE != 0) // Transfer enable ?
+    {
+        return EBUSY;
+    }
+    if (((unit != 1) && (unit != 2) && (unit != 4)) // Invalid transfer unit ?
+            || (block_size == 0) || (block_size > 1024) // Invalid block size ?
+            || (block_count == 0)) // Invalid block count ?
+    {
+        return EINVAL;
+    }
+
+    DMAC3.DMDAR = addr;
+    DMAC3.DMTMD.BIT.SZ = unit >> 1;
+    DMAC3.DMCRA = ((uint32_t)(block_size) << 16u) | (uint32_t)(block_size);
+    DMAC3.DMCRB = block_count;
+    s_dma_done_callback = pcallback;
+
+    return 0;
+}
+
+/**
+ * @brief Get left transfer size.
+ * @return Left transfer size in bytes returned.
+ */
+uint32_t R_Config_DMAC3_Get_LeftSize(void)
+{
+    uint32_t unit = DMAC3.DMTMD.BIT.SZ << 1;
+    if (unit == 0) {
+        unit = 1;
+    }
+
+    uint32_t left_size = DMAC3.DMCRA & 0x3FF; // DMCRL
+    uint32_t left_block = DMAC3.DMCRB;
+
+    return (unit * left_size * left_block);
+}
+
+/**
+ * @brief Getting transfer state.
+ * @return In transferrring, return true. Otherwise, return false.
+ */
+bool R_Config_DMAC3_IsTransferring(void)
+{
+    return DMAC3.DMCNT.BIT.DTE != 0;
+}
+
 /* End user code. Do not edit comment generated here */

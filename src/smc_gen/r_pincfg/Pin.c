@@ -55,10 +55,6 @@ void R_Pins_Create(void)
 {
     R_BSP_RegisterProtectDisable(BSP_REG_PROTECT_MPC);
 
-    /* Set HSYNC pin */
-    MPC.P25PFS.BYTE = 0x1CU;
-    PORT2.PMR.BYTE |= 0x20U;
-
     /* Set LCD_CLK pin */
     MPC.P14PFS.BYTE = 0x25U;
     PORT1.PMR.BYTE |= 0x10U;
@@ -103,46 +99,6 @@ void R_Pins_Create(void)
     MPC.P12PFS.BYTE = 0x25U;
     PORT1.PMR.BYTE |= 0x04U;
 
-    /* Set PCKO pin */
-    MPC.P33PFS.BYTE = 0x1CU;
-    PORT3.PMR.BYTE |= 0x08U;
-
-    /* Set PIXCLK pin */
-    MPC.P24PFS.BYTE = 0x1CU;
-    PORT2.PMR.BYTE |= 0x10U;
-
-    /* Set PIXD0 pin */
-    MPC.P15PFS.BYTE = 0x1CU;
-    PORT1.PMR.BYTE |= 0x20U;
-
-    /* Set PIXD1 pin */
-    MPC.P86PFS.BYTE = 0x1CU;
-    PORT8.PMR.BYTE |= 0x40U;
-
-    /* Set PIXD2 pin */
-    MPC.P87PFS.BYTE = 0x1CU;
-    PORT8.PMR.BYTE |= 0x80U;
-
-    /* Set PIXD3 pin */
-    MPC.P17PFS.BYTE = 0x1CU;
-    PORT1.PMR.BYTE |= 0x80U;
-
-    /* Set PIXD4 pin */
-    MPC.P20PFS.BYTE = 0x1CU;
-    PORT2.PMR.BYTE |= 0x01U;
-
-    /* Set PIXD5 pin */
-    MPC.P21PFS.BYTE = 0x1CU;
-    PORT2.PMR.BYTE |= 0x02U;
-
-    /* Set PIXD6 pin */
-    MPC.P22PFS.BYTE = 0x1CU;
-    PORT2.PMR.BYTE |= 0x04U;
-
-    /* Set PIXD7 pin */
-    MPC.P23PFS.BYTE = 0x1CU;
-    PORT2.PMR.BYTE |= 0x08U;
-
     /* Set SSCL6 pin */
     MPC.P01PFS.BYTE = 0x0AU;
     PORT0.PMR.BYTE |= 0x02U;
@@ -154,10 +110,6 @@ void R_Pins_Create(void)
     /* Set USB0_VBUS pin */
     MPC.P16PFS.BYTE = 0x11U;
     PORT1.PMR.BYTE |= 0x40U;
-
-    /* Set VSYNC pin */
-    MPC.P32PFS.BYTE = 0x1CU;
-    PORT3.PMR.BYTE |= 0x04U;
 
     R_BSP_RegisterProtectEnable(BSP_REG_PROTECT_MPC);
 }

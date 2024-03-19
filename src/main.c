@@ -13,6 +13,8 @@
 #include "usb_cdc.h"
 #include "command_io.h"
 #include "test_signal.h"
+#include "i2c.h"
+#include "pdc.h"
 
 void main(void);
 
@@ -26,12 +28,17 @@ void main(void)
     command_io_init();
     test_signal_init();
     i2c_init();
+    pdc_init();
 
+    volatile int counter = 0;
     while (1) {
         usb_cdc_update();
         command_io_update();
+        pdc_update();
 
         // TODO :
+
+        counter++;
     }
 
 }

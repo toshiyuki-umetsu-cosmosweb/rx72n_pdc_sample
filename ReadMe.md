@@ -27,8 +27,8 @@ GCC for Renesas RX 8.4.0.202204
 
 ## PDC
 
-パラレルデータキャプチャ。
-8bitカメラ入力。
+パラレルデータキャプチャユニットです。8bitカメラ入力です。
+PCLKBで動作し、対応可能なPixeclClockは PixcelClock <= PCLKB * 0.6までになります。
 
 |RX72N PIN#|PDC|Dir|HSBRX72N176 Connector|Signal|
 |--:|---|:-:|:-:|---|
@@ -59,7 +59,10 @@ GCC for Renesas RX 8.4.0.202204
 ## GLCDC
 
 テスト信号出力。 640x480@30fps 30MHz。
+VFP=8, VS=2, VBP=10, VACT=480,
+HFP=48, HSYNC=60, HBP=612, HACT=1280
 GLCDCの背景画像 B データが出続ける。
+HSyncの論理は正論理(HighActive), VSyncの論理は負論理(LowActive)
 
 |RX72N PIN#|PDC|Dir|HSBRX72N176 Connector|Signal|
 |--:|---|:-:|:-:|---|

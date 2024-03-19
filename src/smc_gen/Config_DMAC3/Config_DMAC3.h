@@ -14,83 +14,57 @@
 * following link:
 * http://www.renesas.com/disclaimer
 *
-* Copyright (C) 2024 Renesas Electronics Corporation. All rights reserved.
+* Copyright (C) 2022 Renesas Electronics Corporation. All rights reserved.
 ***********************************************************************************************************************/
+
 /***********************************************************************************************************************
-* File Name    : r_pdc_rx_pinset.c
-* Version      : 1.0.2
-* Device(s)    : R5F572NNDxFC
-* Tool-Chain   : RXC toolchain
-* Description  : Setting of port and mpc registers
+* File Name        : Config_DMAC3.h
+* Component Version: 1.8.0
+* Device(s)        : R5F572NNDxFC
+* Description      : This file implements device driver for Config_DMAC3.
 ***********************************************************************************************************************/
+
+#ifndef CFG_Config_DMAC3_H
+#define CFG_Config_DMAC3_H
 
 /***********************************************************************************************************************
 Includes
 ***********************************************************************************************************************/
-#include "r_pdc_rx_pinset.h"
-#include "platform.h"
+#include "r_cg_dmac.h"
 
 /***********************************************************************************************************************
-Global variables and functions
+Macro definitions (Register bit)
 ***********************************************************************************************************************/
+
 /***********************************************************************************************************************
-* Function Name: R_PDC_PinSet
-* Description  : This function initializes pins for r_pdc_rx module
-* Arguments    : none
-* Return Value : none
+Macro definitions
 ***********************************************************************************************************************/
-void R_PDC_PinSet()
-{
-    R_BSP_RegisterProtectDisable(BSP_REG_PROTECT_MPC);
+#define _61_DMAC3_ACTIVATION_SOURCE                             (0x61U) /* Activation source select */
+#define _00000000_DMAC3_SRC_ADDR                                (0x00000000UL) /* Source address */
+#define _00000000_DMAC3_DST_ADDR                                (0x00000000UL) /* Destination address */
+#define _00010001_DMAC3_DMCRA_COUNT                             (0x00010001UL) /* Repeat or Block size */
+#define _0001_DMAC3_DMCRB_BLK_RPT_COUNT                         (0x0001U) /* Repeat or Transfer-block count */
+#define _0000_DMAC3_SRC_EXT_RPT_AREA                            (0x0000U) /* Source address extended repeat area */
+#define _0000_DMAC3_DST_EXT_RPT_AREA                            (0x0000U) /* Destination address extended repeat area */
 
-    /* Set PIXCLK pin */
-    MPC.P24PFS.BYTE = 0x1CU;
-    PORT2.PMR.BIT.B4 = 1U;
+/***********************************************************************************************************************
+Typedef definitions
+***********************************************************************************************************************/
 
-    /* Set VSYNC pin */
-    MPC.P32PFS.BYTE = 0x1CU;
-    PORT3.PMR.BIT.B2 = 1U;
-
-    /* Set HSYNC pin */
-    MPC.P25PFS.BYTE = 0x1CU;
-    PORT2.PMR.BIT.B5 = 1U;
-
-    /* Set PIXD7 pin */
-    MPC.P23PFS.BYTE = 0x1CU;
-    PORT2.PMR.BIT.B3 = 1U;
-
-    /* Set PIXD6 pin */
-    MPC.P22PFS.BYTE = 0x1CU;
-    PORT2.PMR.BIT.B2 = 1U;
-
-    /* Set PIXD5 pin */
-    MPC.P21PFS.BYTE = 0x1CU;
-    PORT2.PMR.BIT.B1 = 1U;
-
-    /* Set PIXD4 pin */
-    MPC.P20PFS.BYTE = 0x1CU;
-    PORT2.PMR.BIT.B0 = 1U;
-
-    /* Set PIXD3 pin */
-    MPC.P17PFS.BYTE = 0x1CU;
-    PORT1.PMR.BIT.B7 = 1U;
-
-    /* Set PIXD2 pin */
-    MPC.P87PFS.BYTE = 0x1CU;
-    PORT8.PMR.BIT.B7 = 1U;
-
-    /* Set PIXD1 pin */
-    MPC.P86PFS.BYTE = 0x1CU;
-    PORT8.PMR.BIT.B6 = 1U;
-
-    /* Set PIXD0 pin */
-    MPC.P15PFS.BYTE = 0x1CU;
-    PORT1.PMR.BIT.B5 = 1U;
-
-    /* Set PCKO pin */
-    MPC.P33PFS.BYTE = 0x1CU;
-    PORT3.PMR.BIT.B3 = 1U;
-
-    R_BSP_RegisterProtectEnable(BSP_REG_PROTECT_MPC);
-}
-
+/***********************************************************************************************************************
+Global functions
+***********************************************************************************************************************/
+void R_Config_DMAC3_Create(void);
+void R_Config_DMAC3_Create_UserInit(void);
+void R_Config_DMAC3_Start(void);
+void R_Config_DMAC3_Stop(void);
+static void r_dmac3_callback_transfer_end(void);
+/* Start user code for function. Do not edit comment generated here */
+#include <stdint.h>
+#include <stdbool.h>
+int R_Config_DMAC3_Setup(uintptr_t addr, uint8_t unit, uint16_t block_size, uint16_t block_count,
+        void (*pcallback)(int status));
+uint32_t R_Config_DMAC3_Get_LeftSize(void);
+bool R_Config_DMAC3_IsTransferring(void);
+/* End user code. Do not edit comment generated here */
+#endif
