@@ -15,12 +15,12 @@ struct pdc_status
     bool is_resetting;      // リセット中かどうか
     bool is_data_receiving; // キャプチャ動作中かどうか(VSyncの有効エッジ検出でONになり、
                             // 1フレーム分のデータ取得 or 受信停止でOFFになる。(つまり、ほとんどOFF)
-    bool is_fifo_empty;     // FIFOが空かどうか
+    bool is_fifo_empty;     // FIFOが空かどうか(転送完了時はTRUEになるはず)
     bool is_frame_end;      // フレームエンド検知
-    bool has_overrun;       // オーバーランエラー有無
-    bool has_underrun;      // アンダーランエラー有無
-    bool has_vline_err;     // 垂直ラインエラー有無
-    bool has_hsize_err;     // 水平ラインエラー有無
+    bool has_overrun;       // オーバーランエラー有無(データの読み出しが間に合わなかった)
+    bool has_underrun;      // アンダーランエラー有無(データがない状態でFIFOが読まれた（ソフトバグ）)
+    bool has_vline_err;     // 垂直ラインエラー有無(指定したサイズをキャプチャし終わる前にフレームが終了)
+    bool has_hsize_err;     // 水平ラインエラー有無(指定したサイズをキャプチャし終わる前にラインが終了)
 
     uint32_t received_len; // 受信済みサイズ
     uint32_t total_len;    // 総転送サイズ

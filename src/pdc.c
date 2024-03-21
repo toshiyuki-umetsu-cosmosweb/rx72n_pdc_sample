@@ -14,18 +14,37 @@
 #include "rx_driver_pdc.h"
 #include "pdc.h"
 
-#define RAM1_START_ADDR (0x00000000UL)
-#define RAM1_END_ADDR (0x0007FFFFUL)
-#define RAM1_SIZE (RAM1_END_ADDR + 1UL - RAM1_START_ADDR)
+/**
+ * @brief 水平方向キャプチャ開始位置 初期値
+ * @note 水平方向キャプチャ開始 = 水平方向バックポーチ
+ *       VSync検出後、バックポーチバイト分経過したところからキャプチャされる。
+ */
+#define INITIAL_CAPTURE_XST (612)
+/**
+ * @brief キャプチャ範囲 初期値
+ * @note 垂直方向ライン開始 = 垂直方向バックポーチ。
+ *       VSync検出後、バックポーチ分のライン数経過したところからキャプチャされる。
+ */
+#define INITIAL_CAPTURE_YST (10)
+/**
+ * @brief キャプチャ範囲 初期値
+ */
+#define INITIAL_CAPTURE_XSIZE (480)
+/**
+ * @brief キャプチャ範囲初期値
+ */
+#define INITIAL_CAPTURE_YSIZE (200)
+
+
+
 #define RAM2_START_ADDR (0x00800000UL)
 #define RAM2_END_ADDR (0x0087FFFFUL)
 #define RAM2_SIZE (RAM2_END_ADDR + 1UL - RAM2_START_ADDR)
 
-#define DMA_AREA_COUNT (2)
+#define DMA_AREA_COUNT (1)
 
-#define RAM_USEAREA1_SIZE (RAM1_SIZE / 2UL)
-
-#define RAM_USEAREA2_SIZE (RAM2_SIZE)
+#define RAM_USEAREA1_ADDR (uintptr_t)(RAM2_END_ADDR + 1UL - RAM2_SIZE)
+#define RAM_USEAREA1_SIZE (RAM2_SIZE)
 
 /**
  * @brief PDC割り込みプライオリティ
@@ -72,16 +91,10 @@ static uint8_t s_bpp;
  * @brief DMA転送情報
  */
 //@formatter:off
-static struct dma_param s_dma_param[DMA_AREA_COUNT] = {{
-                                                           // RAM1割り当て
-                                                           .addr = (uintptr_t)(RAM1_END_ADDR + 1UL - RAM_USEAREA1_SIZE),
-                                                           .unit = RX_PDC_TRANSFER_DATA_SIZE,
-                                                           .block_size = (RX_PDC_TRANSFER_REQ_UNIT / RX_PDC_TRANSFER_DATA_SIZE),
-                                                           .block_count = 1,
-                                                       },
+static struct dma_param s_dma_param[DMA_AREA_COUNT] = {
                                                        {
-                                                           // RAM2割り当て
-                                                           .addr = (uintptr_t)(RAM2_END_ADDR + 1UL - RAM_USEAREA2_SIZE),
+                                                           // RAM1割り当て
+                                                           .addr = RAM_USEAREA1_ADDR,
                                                            .unit = RX_PDC_TRANSFER_DATA_SIZE,
                                                            .block_size = (RX_PDC_TRANSFER_REQ_UNIT / RX_PDC_TRANSFER_DATA_SIZE),
                                                            .block_count = 1,
@@ -128,11 +141,10 @@ void pdc_init(void)
 
     s_pdc_config.is_vsync_hactive = false;     // Vsync Low Active
     s_pdc_config.is_hsync_hactive = true;      // Hsync High Active
-    s_pdc_config.capture_size.vstart = 10;     // 垂直方向ライン開始 = 垂直方向バックポーチ。
-                                               // VSync検出後、バックポーチ分のライン数後にアクティブデータが入る。
-    s_pdc_config.capture_size.vsize = 480;     // 480ライン
-    s_pdc_config.capture_size.hstart = 612;    // 水平方向開始位置 = 水平方向のバックポーチ
-    s_pdc_config.capture_size.hsize = 640 * 2; // 640 * 2 = 1280バイト (YUVUなので2倍)
+    s_pdc_config.capture_size.hstart = INITIAL_CAPTURE_XST;
+    s_pdc_config.capture_size.hsize = INITIAL_CAPTURE_XSIZE * 2;
+    s_pdc_config.capture_size.vstart = INITIAL_CAPTURE_YST;
+    s_pdc_config.capture_size.vsize = INITIAL_CAPTURE_YSIZE;
 
     s_pdc_config.p_callback.pcb_receive_data_ready = NULL;
     s_pdc_config.p_callback.pcb_frame_end = on_frame_end;
@@ -146,7 +158,7 @@ void pdc_init(void)
     // もし、FITドライバを使うなら、ここで設定をする。
 
     s_dma_area = 0;
-    update_transfer_size(640, 480, 2); // 640 * 480 * YUV 4:2:2(2byte/pixel)
+    update_transfer_size(INITIAL_CAPTURE_XSIZE, INITIAL_CAPTURE_YSIZE, 2);
 
     return;
 }
@@ -157,6 +169,17 @@ void pdc_init(void)
 void pdc_update(void)
 {
     rx_driver_pdc_update();
+    if ((s_end_callback != NULL) // キャプチャ完了待ち処理がある？
+            && !rx_driver_pdc_is_receiving()) // キャプチャ動作していない？
+    {
+        // リセットがタイムアウト終了
+        struct pdc_status status;
+        pdc_get_status(&status);
+        status.has_hsize_err = true;
+        status.has_vline_err = true;
+        s_end_callback(&status);
+        s_end_callback = NULL;
+    }
 
     return;
 }
@@ -212,7 +235,8 @@ bool pdc_get_signal_polarity(bool* is_hsync_hactive, bool* is_vsync_hactive)
 }
 
 /**
- * @brief キャプチャ範囲を設定する
+ * @brief キャプチャ範囲を設定する。
+ *        PDCのFIFO仕様により、1フレームあたりのデータサイズは、32の正数倍にする必要がある。
  * @param xstart X開始位置(HSyncを抜ける位置を0としたオフセット)
  * @param xsize Xキャプチャサイズ
  * @param ystart Y開始位置(VSyncを抜ける位置を0としたオフセット)
@@ -426,10 +450,8 @@ static uint32_t calc_received_length(void)
  */
 static bool set_transfer_irqs_enable(bool is_enabled)
 {
-#if 1
-    // お試しで割り込みしてみる。
+    // Note : DFIEをEnableにしないとDMA転送されない。
     s_pdc_config.interrupt_setting.dfie_ien = is_enabled; // データレディ割り込み許可
-#endif
     s_pdc_config.interrupt_setting.feie_ien = is_enabled;  // フレームエンド割り込み
     s_pdc_config.interrupt_setting.ovie_ien = is_enabled;  // オーバーフロー割り込み
     s_pdc_config.interrupt_setting.udrie_ien = is_enabled; // アンダーフロー割り込み
@@ -450,12 +472,12 @@ static bool update_transfer_size(uint32_t hsize, uint32_t vsize, uint32_t bpw)
 {
     uint32_t total = hsize * vsize * bpw;
 
-    if ((total < 1) || (total > (RAM_USEAREA1_SIZE + RAM_USEAREA2_SIZE)))
+    if ((total < 1) || (total > (RAM_USEAREA1_SIZE)))
     {
         return false;
     }
 
-    if (total <= RAM_USEAREA1_SIZE) // サイズはRAM1領域だけで十分？
+    if (total <= RAM_USEAREA1_SIZE) // サイズは1領域1だけで十分？
     {
         s_dma_param[0].block_count = total / RX_PDC_TRANSFER_REQ_UNIT;
         s_dma_param[1].block_count = 0;
@@ -522,30 +544,36 @@ static void on_dma_request_end(int status)
  */
 static void on_frame_end(const pdc_event_arg_t* arg)
 {
-    // 残りデータがあったら追加する(たぶん必要だと思う)
-    if (PDC.PCSR.BIT.FEMPF != 0) // FIFOはエンプティでない？
+    rx_driver_pdc_set_receive_enable(false); // 受信停止
+    R_Config_DMAC3_Stop();
+
+    // 残りデータがあったら追加する(たぶん必要だと思う?)
+    if (PDC.PCSR.BIT.FEMPF == 0) // FIFOはエンプティでない？
     {
+        uint32_t *dstp = (uint32_t*)(DMAC3.DMDAR);
         while (PDC.PCSR.BIT.FEMPF == 0)
         {
             volatile uint32_t word = PDC.PCDR.LONG;
-
-            // TODO : バッファに追加(リニアじゃないと面倒な処理がある？？)
+            // バッファに追加(リニアじゃないと面倒な処理がある？？)
+            *dstp = word;
+            dstp++;
         }
     }
 
-    rx_driver_pdc_set_receive_enable(false); // 受信停止
-    R_Config_DMAC3_Stop();
     set_transfer_irqs_enable(false);
     if (s_end_callback != NULL)
     {
         struct pdc_status status;
         pdc_get_status(&status);
         status.is_frame_end = true;
+#if 0
         if (!R_Config_DMAC3_IsTransferring()) // 転送してない？
         {
             status.received_len = status.total_len; // 全部転送した判定する
         }
+#endif
         s_end_callback(&status);
+        s_end_callback = NULL;
     }
 
     return;
@@ -580,6 +608,7 @@ static void on_error(const pdc_event_arg_t* arg)
         }
 
         s_end_callback(&state);
+        s_end_callback = NULL;
     }
 
     return;
