@@ -93,7 +93,7 @@ void R_Config_DMAC3_Create(void)
     DMAC3.DMINT.BIT.DTIE = 1U;
 
     /* Set DMAC3 priority level */
-    IPR(DMAC,DMAC3I) = _02_DMAC_PRIORITY_LEVEL2;
+    IPR(DMAC,DMAC3I) = _08_DMAC_PRIORITY_LEVEL8;
 
     /* Enable DMAC activation */
     DMAC.DMAST.BIT.DMST = 1U;
