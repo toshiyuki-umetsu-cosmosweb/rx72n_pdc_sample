@@ -141,6 +141,7 @@ static void cmd_pdc_state(int ac, char** av)
 static void print_pdc_status(const struct pdc_status* pstat)
 {
     printf("%s\n", (pstat->is_receiving ? "Running" : "Idle"));
+    printf("RESET = %d\n", pstat->is_resetting ? 1 : 0);
     printf("FIFO = %s\n", pstat->is_fifo_empty ? "Empty" : "DataExists");
     printf("FBSY = %d\n", pstat->is_data_receiving ? 1 : 0);
     printf("FrameEnd = %d\n", pstat->is_frame_end ? 1 : 0);
@@ -160,7 +161,7 @@ static void print_pdc_status(const struct pdc_status* pstat)
  */
 static void cmd_pdc_capture_range(int ac, char** av)
 {
-    if (ac >= 7)
+    if (ac == 7)
     {
         uint16_t xst, xsize, yst, ysize;
         uint8_t bpp;
@@ -180,6 +181,25 @@ static void cmd_pdc_capture_range(int ac, char** av)
             printf("Set capture range.\n");
         }
     }
+    else if (ac == 4)
+    {
+        uint16_t xst, xsize, yst, ysize;
+        uint8_t bpp;
+        pdc_get_capture_range(&xst, &xsize, &yst, &ysize, &bpp);
+        if (!parse_u16(av[2], &xsize) || !parse_u16(av[3], &ysize))
+        {
+            printf("Invalid arguments.\n");
+            return ;
+        }
+        if (!pdc_set_capture_range(xst, xsize, yst, ysize, bpp))
+        {
+            printf("Could not set capture range.\n");
+        }
+        else
+        {
+            printf("Set capture range.\n");
+        }
+    }
     else if (ac <= 2)
     {
         uint16_t xst, xsize, yst, ysize;
@@ -190,7 +210,9 @@ static void cmd_pdc_capture_range(int ac, char** av)
     else
     {
         printf("usage:\n");
-        printf("  pdc capture-size [ xst# xsize# yst# ysize# bpp# ]\n");
+        printf("  pdc capture-range xst# xsize# yst# ysize# bpp#\n");
+        printf("  pdc capture-range xsize# ysize#\n");
+        printf("  pdc capture-range \n");
     }
 
     return;
